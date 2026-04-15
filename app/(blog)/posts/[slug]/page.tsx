@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import Script from "next/script";
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/utils/date";
 import { extractFirstImage } from "@/lib/utils/extract-image";
@@ -12,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
-const getPost = async (slug: string) => {
+const getPost = cache(async (slug: string) => {
   return prisma.post.findFirst({
     where: { slug, published: true },
     include: {
@@ -21,7 +22,7 @@ const getPost = async (slug: string) => {
       tags: { select: { tag: { select: { name: true, slug: true } } } },
     },
   });
-};
+});
 
 type Props = { params: Promise<{ slug: string }> };
 
