@@ -102,7 +102,7 @@ export async function updatePost(id: string, formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/posts");
-  revalidatePath(`/posts/${slug}`);
+  revalidatePath(`/posts/${encodeURIComponent(slug)}`);
   revalidatePath("/admin/posts");
   revalidatePath(`/admin/posts/${id}/edit`);
   redirect("/admin/posts");
