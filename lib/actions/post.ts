@@ -75,26 +75,30 @@ export async function updatePost(id: string, formData: FormData) {
 
   const existing = await prisma.post.findUnique({ where: { id } });
 
-  await prisma.post.update({
-    where: { id },
-    data: {
-      title,
-      slug,
-      excerpt,
-      content,
-      published,
-      publishedAt:
-        published && !existing?.publishedAt ? new Date() : existing?.publishedAt ?? null,
-      metaTitle,
-      metaDescription,
-      thumbnail,
-      categoryId,
-      tags: {
-        deleteMany: {},
-        create: tagIds.map((tagId) => ({ tagId })),
+  await prisma.$transaction([
+    prisma.tagsOnPosts.deleteMany({ where: { postId: id } }),
+    prisma.post.update({
+      where: { id },
+      data: {
+        title,
+        slug,
+        excerpt,
+        content,
+        published,
+        publishedAt:
+          published && !existing?.publishedAt ? new Date() : existing?.publishedAt ?? null,
+        metaTitle,
+        metaDescription,
+        thumbnail,
+        categoryId,
+        ...(tagIds.length > 0 && {
+          tags: {
+            create: tagIds.map((tagId) => ({ tagId })),
+          },
+        }),
       },
-    },
-  });
+    }),
+  ]);
 
   revalidatePath("/");
   revalidatePath("/posts");
