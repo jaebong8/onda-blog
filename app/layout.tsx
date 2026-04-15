@@ -69,7 +69,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-DKFS7ZXMN7"
+          src="https://www.googletagmanager.com/gtag/js?id=G-SPFPHTDRKE"
           strategy="afterInteractive"
         />
         <Script id="google-analytics" strategy="afterInteractive">
