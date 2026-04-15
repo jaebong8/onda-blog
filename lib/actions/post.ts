@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { generateSlug } from "@/lib/utils/slug";
@@ -9,8 +11,6 @@ function extractExcerpt(html: string, maxLength = 200): string {
   const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
   return text.length <= maxLength ? text : text.slice(0, maxLength).replace(/\s+\S*$/, "") + "…";
 }
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 async function requireAuth() {
   const session = await auth();

@@ -2,11 +2,9 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -30,8 +28,7 @@ export default function LoginPage() {
     if (result?.error) {
       setError("이메일 또는 비밀번호가 올바르지 않습니다.");
     } else {
-      router.push("/admin");
-      router.refresh();
+      window.location.href = "/admin";
     }
   }
 

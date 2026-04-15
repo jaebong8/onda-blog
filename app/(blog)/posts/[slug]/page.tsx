@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import Script from "next/script";
-import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/utils/date";
 import { extractFirstImage } from "@/lib/utils/extract-image";
@@ -13,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
-const getPost = cache(async (slug: string) => {
+const getPost = async (slug: string) => {
   return prisma.post.findFirst({
     where: { slug, published: true },
     include: {
@@ -22,7 +21,7 @@ const getPost = cache(async (slug: string) => {
       tags: { select: { tag: { select: { name: true, slug: true } } } },
     },
   });
-});
+};
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -50,18 +49,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: post.metaDescription ?? post.excerpt,
     },
   };
-}
-
-export async function generateStaticParams() {
-  try {
-    const posts = await prisma.post.findMany({
-      where: { published: true },
-      select: { slug: true },
-    });
-    return posts.map((p: { slug: string }) => ({ slug: p.slug }));
-  } catch {
-    return [];
-  }
 }
 
 export default async function PostPage({ params }: Props) {
