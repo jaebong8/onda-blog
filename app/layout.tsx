@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
+import { NavigationProgress } from "@/components/navigation-progress";
 
 const pretendard = localFont({
   src: "../public/fonts/PretendardVariable.woff2",
@@ -22,7 +23,7 @@ export const metadata: Metadata = {
     default: siteName,
     template: `%s | ${siteName}`,
   },
-  description: "개인 블로그입니다.",
+  description: "좋은 것이 다 온다. 선한 정보를 전달드리겠습니다.",
   openGraph: {
     type: "website",
     locale: "ko_KR",
@@ -56,10 +57,12 @@ export default function RootLayout({
       className={`${pretendard.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col bg-background text-foreground" suppressHydrationWarning>
-        <ThemeProvider>
-          {children}
-        </ThemeProvider>
+      <body
+        className="min-h-full flex flex-col bg-background text-foreground"
+        suppressHydrationWarning
+      >
+        <NavigationProgress />
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

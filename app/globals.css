@@ -3,6 +3,16 @@
 @import "shadcn/tailwind.css";
 @plugin "@tailwindcss/typography";
 
+@keyframes nav-progress {
+  0% { transform: translateX(-100%); }
+  60% { transform: translateX(-20%); }
+  100% { transform: translateX(0%); }
+}
+
+@theme inline {
+  --animate-nav-progress: nav-progress 2s ease-out forwards;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
