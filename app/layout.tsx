@@ -77,7 +77,7 @@ export default function RootLayout({
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            gtag('config', 'G-DKFS7ZXMN7');
+            gtag('config', 'G-SPFPHTDRKE');
           `}
         </Script>
         <NavigationProgress />
