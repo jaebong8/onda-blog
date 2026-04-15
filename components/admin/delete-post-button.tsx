@@ -1,24 +1,29 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTransition } from "react";
 import { deletePost } from "@/lib/actions/post";
 
 export function DeletePostButton({ id }: { id: string }) {
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
-  async function handleDelete() {
+  function handleDelete() {
     if (!confirm("정말 삭제하시겠습니까?")) return;
-    await deletePost(id);
-    router.refresh();
+    startTransition(async () => {
+      await deletePost(id);
+      router.refresh();
+    });
   }
 
   return (
     <button
       type="button"
       onClick={handleDelete}
-      className="text-xs text-destructive hover:text-destructive/80 transition-colors"
+      disabled={isPending}
+      className="text-xs text-destructive hover:text-destructive/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
     >
-      삭제
+      {isPending ? "삭제 중..." : "삭제"}
     </button>
   );
 }
