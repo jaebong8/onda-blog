@@ -4,15 +4,36 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/utils/date";
 
+export const revalidate = 3600;
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+export async function generateStaticParams() {
+  try {
+    const tags = await prisma.tag.findMany({ select: { slug: true } });
+    return tags.map((tag) => ({ slug: tag.slug }));
+  } catch {
+    return [];
+  }
+}
+
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const tag = await prisma.tag.findUnique({ where: { slug: decodeURIComponent(slug) } });
   if (!tag) return {};
+  const canonical = `${siteUrl}/tags/${slug}`;
+  const description = `${tag.name} 태그의 글 목록`;
   return {
     title: `#${tag.name}`,
-    description: `${tag.name} 태그의 글 목록`,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      title: `#${tag.name}`,
+      description,
+      url: canonical,
+    },
   };
 }
 

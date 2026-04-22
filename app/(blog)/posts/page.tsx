@@ -5,11 +5,14 @@ import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/utils/date";
 import { extractFirstImage } from "@/lib/utils/extract-image";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 export const metadata: Metadata = {
-  title: "Posts",
+  title: "전체 글",
   description: "모든 블로그 글 목록입니다.",
+  alternates: { canonical: `${siteUrl}/posts` },
 };
 
 export default async function PostsPage() {
@@ -31,7 +34,7 @@ export default async function PostsPage() {
   return (
     <div className="space-y-10">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Posts</h1>
+        <h1 className="text-3xl font-bold tracking-tight">전체 글</h1>
         <p className="text-muted-foreground mt-1">
           총 {posts.length}개의 글이 있습니다.
         </p>

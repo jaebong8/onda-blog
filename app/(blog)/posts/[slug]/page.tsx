@@ -8,10 +8,23 @@ import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/utils/date";
 import { extractFirstImage } from "@/lib/utils/extract-image";
 import { ViewCounter } from "@/components/blog/view-counter";
+import { ShareButtons } from "@/components/blog/share-buttons";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+export async function generateStaticParams() {
+  try {
+    const posts = await prisma.post.findMany({
+      where: { published: true },
+      select: { slug: true },
+    });
+    return posts.map((post) => ({ slug: post.slug }));
+  } catch {
+    return [];
+  }
+}
 
 const getPost = cache(async (slug: string) => {
   return prisma.post.findFirst({
@@ -35,6 +48,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: post.metaTitle ?? post.title,
     description: post.metaDescription ?? post.excerpt,
+    alternates: {
+      canonical: `${siteUrl}/posts/${slug}`,
+    },
     openGraph: {
       title: post.metaTitle ?? post.title,
       description: post.metaDescription ?? post.excerpt,
@@ -94,15 +110,39 @@ export default async function PostPage({ params }: Props) {
       })
     : [];
 
+  const canonicalUrl = `${siteUrl}/posts/${slug}`;
+  const siteName = process.env.NEXT_PUBLIC_SITE_NAME ?? "My Blog";
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
+    mainEntityOfPage: { "@type": "WebPage", "@id": canonicalUrl },
     headline: post.title,
-    description: post.excerpt,
+    description: post.metaDescription ?? post.excerpt,
+    ...(post.ogImage || post.thumbnail
+      ? { image: { "@type": "ImageObject", url: post.ogImage ?? post.thumbnail } }
+      : {}),
     author: { "@type": "Person", name: post.author.name },
+    publisher: { "@type": "Organization", name: siteName },
     datePublished: post.publishedAt?.toISOString(),
     dateModified: post.updatedAt.toISOString(),
-    url: `${siteUrl}/posts/${slug}`,
+    url: canonicalUrl,
+    ...(post.category && { articleSection: post.category.name }),
+    ...(post.tags.length > 0 && {
+      keywords: post.tags.map(({ tag }: { tag: { name: string; slug: string } }) => tag.name).join(", "),
+    }),
+  };
+
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "홈", item: siteUrl },
+      ...(post.category
+        ? [{ "@type": "ListItem", position: 2, name: post.category.name, item: `${siteUrl}/categories/${post.category.slug}` }]
+        : []),
+      { "@type": "ListItem", position: post.category ? 3 : 2, name: post.title, item: canonicalUrl },
+    ],
   };
 
   return (
@@ -111,6 +151,11 @@ export default async function PostPage({ params }: Props) {
         id="json-ld"
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <Script
+        id="json-ld-breadcrumb"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
       <article className="prose prose-gray dark:prose-invert max-w-none">
         <header className="not-prose mb-8 space-y-3">
@@ -156,6 +201,15 @@ export default async function PostPage({ params }: Props) {
           className="mt-8"
         />
       </article>
+
+      <div className="mt-10 pt-8 border-t">
+        <ShareButtons
+          url={`${siteUrl}/posts/${slug}`}
+          title={post.title}
+          description={post.metaDescription ?? post.excerpt ?? undefined}
+          image={post.ogImage ?? post.thumbnail ?? `${siteUrl}/opengraph-image`}
+        />
+      </div>
 
       {/* 이전/다음 글 */}
       {(prevPost || nextPost) && (

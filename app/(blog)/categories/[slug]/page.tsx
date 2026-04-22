@@ -4,15 +4,36 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/utils/date";
 
+export const revalidate = 3600;
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+export async function generateStaticParams() {
+  try {
+    const categories = await prisma.category.findMany({ select: { slug: true } });
+    return categories.map((cat) => ({ slug: cat.slug }));
+  } catch {
+    return [];
+  }
+}
+
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const category = await prisma.category.findUnique({ where: { slug: decodeURIComponent(slug) } });
   if (!category) return {};
+  const canonical = `${siteUrl}/categories/${slug}`;
+  const description = category.description ?? `${category.name} 카테고리의 글 목록`;
   return {
     title: category.name,
-    description: category.description ?? `${category.name} 카테고리의 글 목록`,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      title: category.name,
+      description,
+      url: canonical,
+    },
   };
 }
 

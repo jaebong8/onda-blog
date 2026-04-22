@@ -33,7 +33,7 @@ export async function createPost(formData: FormData) {
   const thumbnail =
     (formData.get("thumbnail") as string) || extractFirstImage(content) || null;
 
-  const post = await prisma.post.create({
+  await prisma.post.create({
     data: {
       title,
       slug,
@@ -52,8 +52,19 @@ export async function createPost(formData: FormData) {
     },
   });
 
+  // 관련 카테고리·태그 캐시 즉시 갱신
+  if (categoryId || tagIds.length > 0) {
+    const [cat, tags] = await Promise.all([
+      categoryId ? prisma.category.findUnique({ where: { id: categoryId }, select: { slug: true } }) : null,
+      tagIds.length > 0 ? prisma.tag.findMany({ where: { id: { in: tagIds } }, select: { slug: true } }) : [],
+    ]);
+    if (cat) revalidatePath(`/categories/${cat.slug}`);
+    for (const tag of tags) revalidatePath(`/tags/${tag.slug}`);
+  }
+
   revalidatePath("/");
   revalidatePath("/posts");
+  revalidatePath("/sitemap.xml");
   revalidatePath("/admin/posts");
   redirect("/admin/posts");
 }
@@ -62,7 +73,6 @@ export async function updatePost(id: string, formData: FormData) {
   await requireAuth();
 
   const title = formData.get("title") as string;
-  const slug = generateSlug(title);
   const content = formData.get("content") as string;
   const excerpt = extractExcerpt(content);
   const published = formData.get("published") === "true";
@@ -73,7 +83,15 @@ export async function updatePost(id: string, formData: FormData) {
   const thumbnail =
     (formData.get("thumbnail") as string) || extractFirstImage(content) || null;
 
-  const existing = await prisma.post.findUnique({ where: { id } });
+  const existing = await prisma.post.findUnique({
+    where: { id },
+    include: {
+      category: { select: { slug: true } },
+      tags: { select: { tag: { select: { slug: true } } } },
+    },
+  });
+
+  const slug = existing?.slug ?? generateSlug(title);
 
   await prisma.$transaction([
     prisma.tagsOnPosts.deleteMany({ where: { postId: id } }),
@@ -81,7 +99,6 @@ export async function updatePost(id: string, formData: FormData) {
       where: { id },
       data: {
         title,
-        slug,
         excerpt,
         content,
         published,
@@ -100,9 +117,19 @@ export async function updatePost(id: string, formData: FormData) {
     }),
   ]);
 
+  // 기존 카테고리·태그 캐시 갱신
+  if (existing?.category) revalidatePath(`/categories/${existing.category.slug}`);
+  for (const t of existing?.tags ?? []) revalidatePath(`/tags/${t.tag.slug}`);
+  // 새 카테고리·태그 캐시 갱신 (변경된 경우)
+  if (categoryId && categoryId !== existing?.categoryId) {
+    const newCat = await prisma.category.findUnique({ where: { id: categoryId }, select: { slug: true } });
+    if (newCat) revalidatePath(`/categories/${newCat.slug}`);
+  }
+
   revalidatePath("/");
   revalidatePath("/posts");
-  revalidatePath(`/posts/${encodeURIComponent(slug)}`);
+  revalidatePath(`/posts/${slug}`);
+  revalidatePath("/sitemap.xml");
   revalidatePath("/admin/posts");
   revalidatePath(`/admin/posts/${id}/edit`);
   redirect("/admin/posts");
@@ -110,6 +137,22 @@ export async function updatePost(id: string, formData: FormData) {
 
 export async function deletePost(id: string) {
   await requireAuth();
+
+  const post = await prisma.post.findUnique({
+    where: { id },
+    include: {
+      category: { select: { slug: true } },
+      tags: { select: { tag: { select: { slug: true } } } },
+    },
+  });
+
   await prisma.post.delete({ where: { id } });
+
+  if (post?.category) revalidatePath(`/categories/${post.category.slug}`);
+  for (const t of post?.tags ?? []) revalidatePath(`/tags/${t.tag.slug}`);
+  if (post?.slug) revalidatePath(`/posts/${post.slug}`);
+  revalidatePath("/");
+  revalidatePath("/posts");
+  revalidatePath("/sitemap.xml");
   revalidatePath("/admin/posts");
 }

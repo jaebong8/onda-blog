@@ -1,6 +1,8 @@
 import { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 
+export const revalidate = 3600;
+
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -23,20 +25,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   const postEntries: MetadataRoute.Sitemap = posts.map((post: { slug: string; updatedAt: Date }) => ({
-    url: `${siteUrl}/posts/${encodeURIComponent(post.slug)}`,
+    url: `${siteUrl}/posts/${post.slug}`,
     lastModified: post.updatedAt,
     changeFrequency: "weekly",
     priority: 0.8,
   }));
 
   const categoryEntries: MetadataRoute.Sitemap = categories.map((cat: { slug: string }) => ({
-    url: `${siteUrl}/categories/${encodeURIComponent(cat.slug)}`,
+    url: `${siteUrl}/categories/${cat.slug}`,
     changeFrequency: "weekly",
     priority: 0.6,
   }));
 
   const tagEntries: MetadataRoute.Sitemap = tags.map((tag: { slug: string }) => ({
-    url: `${siteUrl}/tags/${encodeURIComponent(tag.slug)}`,
+    url: `${siteUrl}/tags/${tag.slug}`,
     changeFrequency: "weekly",
     priority: 0.5,
   }));
