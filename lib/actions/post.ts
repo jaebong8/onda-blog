@@ -52,14 +52,13 @@ export async function createPost(formData: FormData) {
     },
   });
 
-  // 관련 카테고리·태그 캐시 즉시 갱신
   if (categoryId || tagIds.length > 0) {
     const [cat, tags] = await Promise.all([
       categoryId ? prisma.category.findUnique({ where: { id: categoryId }, select: { slug: true } }) : null,
       tagIds.length > 0 ? prisma.tag.findMany({ where: { id: { in: tagIds } }, select: { slug: true } }) : [],
     ]);
-    if (cat) revalidatePath(`/categories/${cat.slug}`);
-    for (const tag of tags) revalidatePath(`/tags/${tag.slug}`);
+    if (cat) revalidatePath(`/categories/${encodeURIComponent(cat.slug)}`);
+    for (const tag of tags) revalidatePath(`/tags/${encodeURIComponent(tag.slug)}`);
   }
 
   revalidatePath("/");
@@ -117,18 +116,16 @@ export async function updatePost(id: string, formData: FormData) {
     }),
   ]);
 
-  // 기존 카테고리·태그 캐시 갱신
-  if (existing?.category) revalidatePath(`/categories/${existing.category.slug}`);
-  for (const t of existing?.tags ?? []) revalidatePath(`/tags/${t.tag.slug}`);
-  // 새 카테고리·태그 캐시 갱신 (변경된 경우)
+  if (existing?.category) revalidatePath(`/categories/${encodeURIComponent(existing.category.slug)}`);
+  for (const t of existing?.tags ?? []) revalidatePath(`/tags/${encodeURIComponent(t.tag.slug)}`);
   if (categoryId && categoryId !== existing?.categoryId) {
     const newCat = await prisma.category.findUnique({ where: { id: categoryId }, select: { slug: true } });
-    if (newCat) revalidatePath(`/categories/${newCat.slug}`);
+    if (newCat) revalidatePath(`/categories/${encodeURIComponent(newCat.slug)}`);
   }
 
   revalidatePath("/");
   revalidatePath("/posts");
-  revalidatePath(`/posts/${slug}`);
+  revalidatePath(`/posts/${encodeURIComponent(slug)}`);
   revalidatePath("/sitemap.xml");
   revalidatePath("/admin/posts");
   revalidatePath(`/admin/posts/${id}/edit`);
@@ -148,9 +145,9 @@ export async function deletePost(id: string) {
 
   await prisma.post.delete({ where: { id } });
 
-  if (post?.category) revalidatePath(`/categories/${post.category.slug}`);
-  for (const t of post?.tags ?? []) revalidatePath(`/tags/${t.tag.slug}`);
-  if (post?.slug) revalidatePath(`/posts/${post.slug}`);
+  if (post?.category) revalidatePath(`/categories/${encodeURIComponent(post.category.slug)}`);
+  for (const t of post?.tags ?? []) revalidatePath(`/tags/${encodeURIComponent(t.tag.slug)}`);
+  if (post?.slug) revalidatePath(`/posts/${encodeURIComponent(post.slug)}`);
   revalidatePath("/");
   revalidatePath("/posts");
   revalidatePath("/sitemap.xml");
