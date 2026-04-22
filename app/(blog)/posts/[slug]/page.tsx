@@ -10,7 +10,7 @@ import { extractFirstImage } from "@/lib/utils/extract-image";
 import { ViewCounter } from "@/components/blog/view-counter";
 import { ShareButtons } from "@/components/blog/share-buttons";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
