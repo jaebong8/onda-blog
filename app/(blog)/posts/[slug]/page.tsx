@@ -193,10 +193,16 @@ export default async function PostPage({ params }: Props) {
 
         <div
           dangerouslySetInnerHTML={{
-            __html: post.content.replace(
-              /<img(?![^>]*\balt=["'][^"']+["'])[^>]*(src=["'][^"']+["'])[^>]*>/gi,
-              (match) => match.replace("<img", `<img alt="${post.title}"`)
-            ),
+            __html: post.content
+              .replace(
+                /<img(?![^>]*\balt=["'][^"']+["'])[^>]*(src=["'][^"']+["'])[^>]*>/gi,
+                (match) => match.replace("<img", `<img alt="${post.title}"`)
+              )
+              .replace(
+                /#([가-힣a-zA-Z0-9_]+)(?![^<]*?>)/g,
+                (_, tag) =>
+                  `<a href="/tags/${encodeURIComponent(tag)}" class="text-primary font-medium hover:underline underline-offset-2">#${tag}</a>`
+              ),
           }}
           className="mt-8"
         />

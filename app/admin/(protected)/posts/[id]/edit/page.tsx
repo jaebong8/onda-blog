@@ -10,15 +10,9 @@ type Props = { params: Promise<{ id: string }> };
 export default async function EditPostPage({ params }: Props) {
   const { id } = await params;
 
-  const [post, categories, tags] = await Promise.all([
-    prisma.post.findUnique({
-      where: { id },
-      include: {
-        tags: { select: { tagId: true } },
-      },
-    }),
+  const [post, categories] = await Promise.all([
+    prisma.post.findUnique({ where: { id } }),
     prisma.category.findMany({ orderBy: { name: "asc" } }),
-    prisma.tag.findMany({ orderBy: { name: "asc" } }),
   ]);
 
   if (!post) notFound();
@@ -31,7 +25,6 @@ export default async function EditPostPage({ params }: Props) {
       <PostForm
         action={action}
         categories={categories}
-        tags={tags}
         defaultValues={{
           title: post.title,
           slug: post.slug,
@@ -41,7 +34,6 @@ export default async function EditPostPage({ params }: Props) {
           metaTitle: post.metaTitle ?? "",
           metaDescription: post.metaDescription ?? "",
           categoryId: post.categoryId ?? "",
-          tagIds: post.tags.map((t: { tagId: string }) => t.tagId),
           thumbnail: post.thumbnail ?? "",
         }}
       />

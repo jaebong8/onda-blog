@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { generateSlug } from "@/lib/utils/slug";
 import { extractFirstImage } from "@/lib/utils/extract-image";
+import { extractHashtags } from "@/lib/utils/extract-hashtags";
 
 function extractExcerpt(html: string, maxLength = 200): string {
   const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
@@ -16,6 +17,21 @@ async function requireAuth() {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
   return session.user.id;
+}
+
+async function upsertHashtagTags(content: string) {
+  const names = extractHashtags(content);
+  if (names.length === 0) return [];
+  return Promise.all(
+    names.map((name) =>
+      prisma.tag.upsert({
+        where: { name },
+        create: { name, slug: generateSlug(name) },
+        update: {},
+        select: { id: true, slug: true },
+      })
+    )
+  );
 }
 
 export async function createPost(formData: FormData) {
@@ -29,9 +45,10 @@ export async function createPost(formData: FormData) {
   const metaTitle = (formData.get("metaTitle") as string) || null;
   const metaDescription = (formData.get("metaDescription") as string) || null;
   const categoryId = (formData.get("categoryId") as string) || null;
-  const tagIds = formData.getAll("tagIds") as string[];
   const thumbnail =
     (formData.get("thumbnail") as string) || extractFirstImage(content) || null;
+
+  const tags = await upsertHashtagTags(content);
 
   await prisma.post.create({
     data: {
@@ -47,19 +64,16 @@ export async function createPost(formData: FormData) {
       authorId,
       categoryId,
       tags: {
-        create: tagIds.map((tagId) => ({ tagId })),
+        create: tags.map((t) => ({ tagId: t.id })),
       },
     },
   });
 
-  if (categoryId || tagIds.length > 0) {
-    const [cat, tags] = await Promise.all([
-      categoryId ? prisma.category.findUnique({ where: { id: categoryId }, select: { slug: true } }) : null,
-      tagIds.length > 0 ? prisma.tag.findMany({ where: { id: { in: tagIds } }, select: { slug: true } }) : [],
-    ]);
+  if (categoryId) {
+    const cat = await prisma.category.findUnique({ where: { id: categoryId }, select: { slug: true } });
     if (cat) revalidatePath(`/categories/${encodeURIComponent(cat.slug)}`);
-    for (const tag of tags) revalidatePath(`/tags/${encodeURIComponent(tag.slug)}`);
   }
+  for (const tag of tags) revalidatePath(`/tags/${encodeURIComponent(tag.slug)}`);
 
   revalidatePath("/");
   revalidatePath("/posts");
@@ -78,17 +92,19 @@ export async function updatePost(id: string, formData: FormData) {
   const metaTitle = (formData.get("metaTitle") as string) || null;
   const metaDescription = (formData.get("metaDescription") as string) || null;
   const categoryId = (formData.get("categoryId") as string) || null;
-  const tagIds = formData.getAll("tagIds") as string[];
   const thumbnail =
     (formData.get("thumbnail") as string) || extractFirstImage(content) || null;
 
-  const existing = await prisma.post.findUnique({
-    where: { id },
-    include: {
-      category: { select: { slug: true } },
-      tags: { select: { tag: { select: { slug: true } } } },
-    },
-  });
+  const [existing, tags] = await Promise.all([
+    prisma.post.findUnique({
+      where: { id },
+      include: {
+        category: { select: { slug: true } },
+        tags: { select: { tag: { select: { slug: true } } } },
+      },
+    }),
+    upsertHashtagTags(content),
+  ]);
 
   const slug = existing?.slug ?? generateSlug(title);
 
@@ -107,9 +123,9 @@ export async function updatePost(id: string, formData: FormData) {
         metaDescription,
         thumbnail,
         categoryId,
-        ...(tagIds.length > 0 && {
+        ...(tags.length > 0 && {
           tags: {
-            create: tagIds.map((tagId) => ({ tagId })),
+            create: tags.map((t) => ({ tagId: t.id })),
           },
         }),
       },
@@ -122,6 +138,7 @@ export async function updatePost(id: string, formData: FormData) {
     const newCat = await prisma.category.findUnique({ where: { id: categoryId }, select: { slug: true } });
     if (newCat) revalidatePath(`/categories/${encodeURIComponent(newCat.slug)}`);
   }
+  for (const tag of tags) revalidatePath(`/tags/${encodeURIComponent(tag.slug)}`);
 
   revalidatePath("/");
   revalidatePath("/posts");
