@@ -101,12 +101,12 @@ export default async function PostPage({ params }: Props) {
       where: { postId: post.id, parentId: null },
       orderBy: { createdAt: "desc" },
       include: {
-        author: { select: { id: true, name: true, image: true, provider: true } },
+        author: { select: { id: true, name: true, email: true, image: true, provider: true } },
         likes: { select: { userId: true } },
         replies: {
           orderBy: { createdAt: "asc" },
           include: {
-            author: { select: { id: true, name: true, image: true, provider: true } },
+            author: { select: { id: true, name: true, email: true, image: true, provider: true } },
             likes: { select: { userId: true } },
           },
         },
@@ -131,14 +131,14 @@ export default async function PostPage({ params }: Props) {
     id: c.id,
     content: c.content,
     createdAt: c.createdAt,
-    author: c.author,
+    author: { ...c.author, email: c.author.email ?? null },
     likeCount: c.likes.length,
     liked: userId ? c.likes.some((l) => l.userId === userId) : false,
     replies: c.replies.map((r) => ({
       id: r.id,
       content: r.content,
       createdAt: r.createdAt,
-      author: r.author,
+      author: { ...r.author, email: r.author.email ?? null },
       likeCount: r.likes.length,
       liked: userId ? r.likes.some((l) => l.userId === userId) : false,
     })),

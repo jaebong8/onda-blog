@@ -7,7 +7,12 @@ import { toggleCommentLike } from "@/lib/actions/like";
 import { formatDate } from "@/lib/utils/date";
 import { ProviderIcon } from "@/components/blog/provider-icon";
 
-type Author = { id: string; name: string; image: string | null; provider: string | null };
+type Author = { id: string; name: string; email: string | null; image: string | null; provider: string | null };
+
+function displayName(email: string | null | undefined, name: string) {
+  if (email && !email.endsWith("@oauth.local")) return email;
+  return name;
+}
 
 type Reply = {
   id: string;
@@ -189,7 +194,7 @@ function CommentItem({
       <Avatar user={comment.author} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-sm font-medium">{comment.author.name}</span>
+          <span className="text-sm font-medium">{displayName(comment.author.email, comment.author.name)}</span>
           <span className="text-xs text-muted-foreground">{formatDate(comment.createdAt)}</span>
         </div>
         <p className="text-sm text-foreground/90 whitespace-pre-wrap break-words">{comment.content}</p>

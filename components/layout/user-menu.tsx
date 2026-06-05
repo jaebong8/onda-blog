@@ -19,8 +19,10 @@ export async function UserMenu() {
   return (
     <div className="flex items-center gap-2">
       <ProviderIcon provider={session.user.provider} size={28} />
-      <span className="text-sm hidden sm:block max-w-20 truncate">
-        {session.user.name}
+      <span className="text-sm hidden sm:block max-w-32 truncate">
+        {session.user.email && !session.user.email.endsWith("@oauth.local")
+          ? session.user.email
+          : session.user.name}
       </span>
       <form
         action={async () => {
