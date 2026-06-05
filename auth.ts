@@ -1,11 +1,21 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
+import Kakao from "next-auth/providers/kakao";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
   providers: [
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
+    Kakao({
+      clientId: process.env.KAKAO_CLIENT_ID!,
+      clientSecret: process.env.KAKAO_CLIENT_SECRET!,
+    }),
     Credentials({
       name: "credentials",
       credentials: {
@@ -14,42 +24,68 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
-
         const user = await prisma.user.findUnique({
           where: { email: credentials.email as string },
         });
-
-        if (!user) return null;
-
-        const isValid = await bcrypt.compare(
-          credentials.password as string,
-          user.password
-        );
-
+        if (!user || !user.password) return null;
+        const isValid = await bcrypt.compare(credentials.password as string, user.password);
         if (!isValid) return null;
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-        };
+        return { id: user.id, email: user.email, name: user.name };
       },
     }),
   ],
   pages: {
-    signIn: "/admin/login",
+    signIn: "/login",
   },
   session: {
     strategy: "jwt",
-    maxAge: 60 * 60 * 24, // 1일
+    maxAge: 60 * 60 * 24,
   },
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) token.id = user.id;
+    async signIn({ user, account }) {
+      if (account?.provider === "google" || account?.provider === "kakao") {
+        if (!user.email) return false;
+        try {
+          await prisma.user.upsert({
+            where: { email: user.email },
+            update: { name: user.name ?? "User", image: user.image ?? null },
+            create: { email: user.email, name: user.name ?? "User", image: user.image ?? null, role: "USER" },
+          });
+        } catch {
+          return false;
+        }
+      }
+      return true;
+    },
+    async jwt({ token, user, account }) {
+      if (user) {
+        if (account?.provider === "credentials") {
+          token.id = user.id;
+          const dbUser = await prisma.user.findUnique({
+            where: { id: user.id as string },
+            select: { role: true },
+          });
+          token.role = dbUser?.role ?? "USER";
+        } else if (user.email) {
+          const dbUser = await prisma.user.findUnique({
+            where: { email: user.email },
+            select: { id: true, role: true, image: true },
+          });
+          if (dbUser) {
+            token.id = dbUser.id;
+            token.role = dbUser.role;
+            if (dbUser.image) token.picture = dbUser.image;
+          }
+        }
+      }
       return token;
     },
     async session({ session, token }) {
-      if (token && session.user) session.user.id = token.id as string;
+      if (session.user) {
+        session.user.id = token.id as string;
+        session.user.role = token.role as string;
+        if (token.picture) session.user.image = token.picture as string;
+      }
       return session;
     },
   },

@@ -11,18 +11,14 @@ async function main() {
   const password = process.env.ADMIN_PASSWORD ?? "changeme";
   const name = process.env.ADMIN_NAME ?? "Admin";
 
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
-    console.log(`Admin user already exists: ${email}`);
-    return;
-  }
-
   const hashed = await bcrypt.hash(password, 12);
-  await prisma.user.create({
-    data: { email, password: hashed, name },
+  await prisma.user.upsert({
+    where: { email },
+    update: { role: "ADMIN", password: hashed },
+    create: { email, password: hashed, name, role: "ADMIN" },
   });
 
-  console.log(`Admin user created: ${email}`);
+  console.log(`Admin user upserted: ${email}`);
 }
 
 main()

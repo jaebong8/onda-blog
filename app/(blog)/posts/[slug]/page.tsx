@@ -5,10 +5,13 @@ import Image from "next/image";
 import Script from "next/script";
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 import { formatDate } from "@/lib/utils/date";
 import { extractFirstImage } from "@/lib/utils/extract-image";
 import { ViewCounter } from "@/components/blog/view-counter";
 import { ShareButtons } from "@/components/blog/share-buttons";
+import { PostLikeButton } from "@/components/blog/post-like-button";
+import { CommentSection } from "@/components/blog/comment-section";
 
 export const dynamic = "force-dynamic";
 
@@ -71,12 +74,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PostPage({ params }: Props) {
   const { slug } = await params;
   const decodedSlug = decodeURIComponent(slug);
-  const post = await getPost(decodedSlug);
+
+  const [post, session] = await Promise.all([
+    getPost(decodedSlug),
+    auth(),
+  ]);
 
   if (!post) notFound();
 
-  // 이전/다음 글
-  const [prevPost, nextPost] = await Promise.all([
+  const [prevPost, nextPost, likeData, comments] = await Promise.all([
     prisma.post.findFirst({
       where: { published: true, publishedAt: { lt: post.publishedAt ?? new Date() } },
       orderBy: { publishedAt: "desc" },
@@ -87,28 +93,56 @@ export default async function PostPage({ params }: Props) {
       orderBy: { publishedAt: "asc" },
       select: { title: true, slug: true },
     }),
+    prisma.postLike.findMany({
+      where: { postId: post.id },
+      select: { userId: true },
+    }),
+    prisma.comment.findMany({
+      where: { postId: post.id, parentId: null },
+      orderBy: { createdAt: "desc" },
+      include: {
+        author: { select: { id: true, name: true, image: true } },
+        likes: { select: { userId: true } },
+        replies: {
+          orderBy: { createdAt: "asc" },
+          include: {
+            author: { select: { id: true, name: true, image: true } },
+            likes: { select: { userId: true } },
+          },
+        },
+      },
+    }),
   ]);
 
-  // 관련 글 (같은 카테고리, 현재 글 제외)
   const relatedPosts = post.category
     ? await prisma.post.findMany({
-        where: {
-          published: true,
-          categoryId: post.categoryId,
-          NOT: { slug: decodedSlug },
-        },
+        where: { published: true, categoryId: post.categoryId, NOT: { slug: decodedSlug } },
         orderBy: { publishedAt: "desc" },
         take: 3,
-        select: {
-          slug: true,
-          title: true,
-          excerpt: true,
-          thumbnail: true,
-          content: true,
-          publishedAt: true,
-        },
+        select: { slug: true, title: true, excerpt: true, thumbnail: true, content: true, publishedAt: true },
       })
     : [];
+
+  const userId = session?.user?.id ?? null;
+  const likeCount = likeData.length;
+  const userLiked = userId ? likeData.some((l) => l.userId === userId) : false;
+
+  const mappedComments = comments.map((c) => ({
+    id: c.id,
+    content: c.content,
+    createdAt: c.createdAt,
+    author: c.author,
+    likeCount: c.likes.length,
+    liked: userId ? c.likes.some((l) => l.userId === userId) : false,
+    replies: c.replies.map((r) => ({
+      id: r.id,
+      content: r.content,
+      createdAt: r.createdAt,
+      author: r.author,
+      likeCount: r.likes.length,
+      liked: userId ? r.likes.some((l) => l.userId === userId) : false,
+    })),
+  }));
 
   const canonicalUrl = `${siteUrl}/posts/${slug}`;
   const siteName = process.env.NEXT_PUBLIC_SITE_NAME ?? "My Blog";
@@ -147,16 +181,9 @@ export default async function PostPage({ params }: Props) {
 
   return (
     <>
-      <Script
-        id="json-ld"
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      <Script
-        id="json-ld-breadcrumb"
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
-      />
+      <Script id="json-ld" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <Script id="json-ld-breadcrumb" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
+
       <article className="prose prose-gray dark:prose-invert max-w-none">
         <header className="not-prose mb-8 space-y-3">
           <div className="flex items-center gap-2 text-sm flex-wrap">
@@ -208,7 +235,18 @@ export default async function PostPage({ params }: Props) {
         />
       </article>
 
-      <div className="mt-10 pt-8 border-t">
+      {/* 좋아요 */}
+      <div className="mt-10 flex justify-center">
+        <PostLikeButton
+          postId={post.id}
+          initialCount={likeCount}
+          initialLiked={userLiked}
+          isLoggedIn={!!userId}
+        />
+      </div>
+
+      {/* 공유 */}
+      <div className="mt-6 pt-8 border-t">
         <ShareButtons
           url={`${siteUrl}/posts/${slug}`}
           title={post.title}
@@ -222,27 +260,17 @@ export default async function PostPage({ params }: Props) {
         <nav className="mt-16 border-t pt-8 grid grid-cols-2 gap-4">
           <div>
             {prevPost && (
-              <Link
-                href={`/posts/${encodeURIComponent(prevPost.slug)}`}
-                className="group flex flex-col gap-1"
-              >
+              <Link href={`/posts/${encodeURIComponent(prevPost.slug)}`} className="group flex flex-col gap-1">
                 <span className="text-xs text-muted-foreground">← 이전 글</span>
-                <span className="text-sm font-medium group-hover:underline underline-offset-4 line-clamp-2">
-                  {prevPost.title}
-                </span>
+                <span className="text-sm font-medium group-hover:underline underline-offset-4 line-clamp-2">{prevPost.title}</span>
               </Link>
             )}
           </div>
           <div className="text-right">
             {nextPost && (
-              <Link
-                href={`/posts/${encodeURIComponent(nextPost.slug)}`}
-                className="group flex flex-col gap-1 items-end"
-              >
+              <Link href={`/posts/${encodeURIComponent(nextPost.slug)}`} className="group flex flex-col gap-1 items-end">
                 <span className="text-xs text-muted-foreground">다음 글 →</span>
-                <span className="text-sm font-medium group-hover:underline underline-offset-4 line-clamp-2">
-                  {nextPost.title}
-                </span>
+                <span className="text-sm font-medium group-hover:underline underline-offset-4 line-clamp-2">{nextPost.title}</span>
               </Link>
             )}
           </div>
@@ -264,24 +292,12 @@ export default async function PostPage({ params }: Props) {
                 >
                   {thumbSrc && (
                     <div className="relative w-full aspect-video bg-muted">
-                      <Image
-                        src={thumbSrc}
-                        alt={related.title}
-                        fill
-                        className="object-cover transition-transform group-hover:scale-105"
-                        sizes="(max-width: 640px) 100vw, 33vw"
-                      />
+                      <Image src={thumbSrc} alt={related.title} fill className="object-cover transition-transform group-hover:scale-105" sizes="(max-width: 640px) 100vw, 33vw" />
                     </div>
                   )}
                   <div className="p-3 space-y-1">
-                    <p className="text-sm font-medium line-clamp-2 group-hover:underline underline-offset-4">
-                      {related.title}
-                    </p>
-                    {related.publishedAt && (
-                      <p className="text-xs text-muted-foreground">
-                        {formatDate(related.publishedAt)}
-                      </p>
-                    )}
+                    <p className="text-sm font-medium line-clamp-2 group-hover:underline underline-offset-4">{related.title}</p>
+                    {related.publishedAt && <p className="text-xs text-muted-foreground">{formatDate(related.publishedAt)}</p>}
                   </div>
                 </Link>
               );
@@ -289,6 +305,13 @@ export default async function PostPage({ params }: Props) {
           </div>
         </section>
       )}
+
+      {/* 댓글 */}
+      <CommentSection
+        postId={post.id}
+        comments={mappedComments}
+        currentUser={session?.user ? { id: session.user.id, name: session.user.name ?? "", image: session.user.image, role: session.user.role } : null}
+      />
     </>
   );
 }

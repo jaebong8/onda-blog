@@ -16,6 +16,7 @@ function extractExcerpt(html: string, maxLength = 200): string {
 async function requireAuth() {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
+  if ((session.user as { role?: string }).role !== "ADMIN") throw new Error("Forbidden");
   return session.user.id;
 }
 
