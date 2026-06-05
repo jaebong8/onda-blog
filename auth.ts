@@ -44,12 +44,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     async signIn({ user, account }) {
       if (account?.provider === "google" || account?.provider === "kakao") {
-        if (!user.email) return false;
+        // 카카오는 이메일을 제공하지 않을 수 있으므로 고유 식별자로 대체
+        const email = user.email ?? `${account.provider}_${account.providerAccountId}@oauth.local`;
         try {
           await prisma.user.upsert({
-            where: { email: user.email },
+            where: { email },
             update: { name: user.name ?? "User", image: user.image ?? null },
-            create: { email: user.email, name: user.name ?? "User", image: user.image ?? null, role: "USER" },
+            create: { email, name: user.name ?? "User", image: user.image ?? null, role: "USER" },
           });
         } catch {
           return false;
@@ -66,9 +67,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             select: { role: true },
           });
           token.role = dbUser?.role ?? "USER";
-        } else if (user.email) {
+        } else if (account?.providerAccountId) {
+          const email = user.email ?? `${account.provider}_${account.providerAccountId}@oauth.local`;
           const dbUser = await prisma.user.findUnique({
-            where: { email: user.email },
+            where: { email },
             select: { id: true, role: true, image: true },
           });
           if (dbUser) {
