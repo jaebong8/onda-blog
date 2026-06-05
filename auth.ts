@@ -63,24 +63,28 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
     async jwt({ token, user, account }) {
       if (user) {
-        if (account?.provider === "credentials") {
-          token.id = user.id;
-          const dbUser = await prisma.user.findUnique({
-            where: { id: user.id as string },
-            select: { role: true },
-          });
-          token.role = dbUser?.role ?? "USER";
-        } else if (account?.providerAccountId) {
-          const email = user.email ?? `${account.provider}_${account.providerAccountId}@oauth.local`;
-          const dbUser = await prisma.user.findUnique({
-            where: { email },
-            select: { id: true, role: true, provider: true },
-          });
-          if (dbUser) {
-            token.id = dbUser.id;
-            token.role = dbUser.role;
-            token.provider = dbUser.provider;
+        try {
+          if (account?.provider === "credentials") {
+            token.id = user.id;
+            const dbUser = await prisma.user.findUnique({
+              where: { id: user.id as string },
+              select: { role: true },
+            });
+            token.role = dbUser?.role ?? "USER";
+          } else if (account?.providerAccountId) {
+            const email = user.email ?? `${account.provider}_${account.providerAccountId}@oauth.local`;
+            const dbUser = await prisma.user.findUnique({
+              where: { email },
+              select: { id: true, role: true, provider: true },
+            });
+            if (dbUser) {
+              token.id = dbUser.id;
+              token.role = dbUser.role;
+              token.provider = dbUser.provider;
+            }
           }
+        } catch (e) {
+          console.error("[jwt callback error]", e);
         }
       }
       return token;
