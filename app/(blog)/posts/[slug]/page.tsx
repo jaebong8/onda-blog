@@ -101,12 +101,12 @@ export default async function PostPage({ params }: Props) {
       where: { postId: post.id, parentId: null },
       orderBy: { createdAt: "desc" },
       include: {
-        author: { select: { id: true, name: true, image: true } },
+        author: { select: { id: true, name: true, image: true, provider: true } },
         likes: { select: { userId: true } },
         replies: {
           orderBy: { createdAt: "asc" },
           include: {
-            author: { select: { id: true, name: true, image: true } },
+            author: { select: { id: true, name: true, image: true, provider: true } },
             likes: { select: { userId: true } },
           },
         },

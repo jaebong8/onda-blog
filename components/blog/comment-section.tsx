@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useTransition, useRef } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { createComment, deleteComment } from "@/lib/actions/comment";
 import { toggleCommentLike } from "@/lib/actions/like";
 import { formatDate } from "@/lib/utils/date";
+import { ProviderIcon } from "@/components/blog/provider-icon";
 
-type Author = { id: string; name: string; image: string | null };
+type Author = { id: string; name: string; image: string | null; provider: string | null };
 
 type Reply = {
   id: string;
@@ -36,23 +36,8 @@ type Props = {
   currentUser: CurrentUser;
 };
 
-function Avatar({ user }: { user: { name: string; image: string | null } }) {
-  if (user.image) {
-    return (
-      <Image
-        src={user.image}
-        alt={user.name}
-        width={32}
-        height={32}
-        className="rounded-full shrink-0"
-      />
-    );
-  }
-  return (
-    <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center text-xs font-semibold text-primary shrink-0">
-      {user.name[0]?.toUpperCase()}
-    </div>
-  );
+function Avatar({ user }: { user: { name: string; provider: string | null } }) {
+  return <ProviderIcon provider={user.provider} size={32} />;
 }
 
 function LikeButton({

@@ -52,8 +52,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         try {
           await prisma.user.upsert({
             where: { email },
-            update: { name: user.name ?? "User", image: user.image ?? null },
-            create: { email, name: user.name ?? "User", image: user.image ?? null, role: "USER" },
+            update: { name: user.name ?? "User", provider: account.provider },
+            create: { email, name: user.name ?? "User", provider: account.provider, role: "USER" },
           });
         } catch {
           return false;
@@ -74,12 +74,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           const email = user.email ?? `${account.provider}_${account.providerAccountId}@oauth.local`;
           const dbUser = await prisma.user.findUnique({
             where: { email },
-            select: { id: true, role: true, image: true },
+            select: { id: true, role: true, provider: true },
           });
           if (dbUser) {
             token.id = dbUser.id;
             token.role = dbUser.role;
-            if (dbUser.image) token.picture = dbUser.image;
+            token.provider = dbUser.provider;
           }
         }
       }
@@ -89,7 +89,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
-        if (token.picture) session.user.image = token.picture as string;
+        session.user.provider = (token.provider as string) ?? null;
       }
       return session;
     },

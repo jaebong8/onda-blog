@@ -4,7 +4,8 @@
       "Bash(git commit -m ' *)",
       "Bash(npm install *)",
       "Bash(npm run *)",
-      "Bash(node -e \"console.log\\(require\\('./node_modules/next-auth/package.json'\\).version\\)\")"
+      "Bash(node -e \"console.log\\(require\\('./node_modules/next-auth/package.json'\\).version\\)\")",
+      "Bash(git commit *)"
     ]
   }
 }

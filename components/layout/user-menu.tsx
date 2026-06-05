@@ -1,6 +1,6 @@
 import { auth, signOut } from "@/auth";
 import Link from "next/link";
-import Image from "next/image";
+import { ProviderIcon } from "@/components/blog/provider-icon";
 
 export async function UserMenu() {
   const session = await auth();
@@ -18,20 +18,8 @@ export async function UserMenu() {
 
   return (
     <div className="flex items-center gap-2">
-      {session.user.image ? (
-        <Image
-          src={session.user.image}
-          alt={session.user.name ?? ""}
-          width={28}
-          height={28}
-          className="rounded-full"
-        />
-      ) : (
-        <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium text-primary">
-          {session.user.name?.[0]?.toUpperCase() ?? "U"}
-        </div>
-      )}
-      <span className="text-sm hidden sm:block max-w-[80px] truncate">
+      <ProviderIcon provider={session.user.provider} size={28} />
+      <span className="text-sm hidden sm:block max-w-20 truncate">
         {session.user.name}
       </span>
       <form
