@@ -5,6 +5,10 @@ import Kakao from "next-auth/providers/kakao";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
+console.log("[auth.ts] KAKAO_CLIENT_ID set:", !!process.env.KAKAO_CLIENT_ID);
+console.log("[auth.ts] KAKAO_CLIENT_SECRET set:", !!process.env.KAKAO_CLIENT_SECRET);
+console.log("[auth.ts] KAKAO_CLIENT_ID length:", process.env.KAKAO_CLIENT_ID?.length ?? 0);
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
   providers: [
@@ -14,10 +18,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
     Kakao({
       clientId: process.env.KAKAO_CLIENT_ID!,
-      clientSecret: process.env.KAKAO_CLIENT_SECRET!,
-      authorization: {
-        params: { scope: "profile_nickname profile_image account_email" },
-      },
+      clientSecret: process.env.KAKAO_CLIENT_SECRET ?? "",
     }),
     Credentials({
       name: "credentials",
@@ -46,8 +47,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   callbacks: {
     async signIn({ user, account }) {
+      console.log("[signIn] provider:", account?.provider);
+      console.log("[signIn] user.email:", user.email);
+      console.log("[signIn] user.name:", user.name);
+      console.log("[signIn] providerAccountId:", account?.providerAccountId);
       if (account?.provider === "google" || account?.provider === "kakao") {
-        // 카카오는 이메일을 제공하지 않을 수 있으므로 고유 식별자로 대체
         const email = user.email ?? `${account.provider}_${account.providerAccountId}@oauth.local`;
         try {
           await prisma.user.upsert({
@@ -55,7 +59,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             update: { name: user.name ?? "User", provider: account.provider },
             create: { email, name: user.name ?? "User", provider: account.provider, role: "USER" },
           });
-        } catch {
+          console.log("[signIn] upsert success:", email);
+        } catch (e) {
+          console.error("[signIn upsert error]", e);
           return false;
         }
       }
