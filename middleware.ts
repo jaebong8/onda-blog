@@ -14,8 +14,14 @@ export async function middleware(request: NextRequest) {
     secret: process.env.AUTH_SECRET,
   });
 
-  if (!token || token.role !== "ADMIN") {
+  // 비로그인 → 어드민 로그인 페이지
+  if (!token) {
     return NextResponse.redirect(new URL("/admin/login", request.url));
+  }
+
+  // 로그인했지만 ADMIN 아님 → 홈
+  if (token.role !== "ADMIN") {
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   return NextResponse.next();
