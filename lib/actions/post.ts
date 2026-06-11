@@ -13,7 +13,7 @@ function extractExcerpt(html: string, maxLength = 200): string {
   return text.length <= maxLength ? text : text.slice(0, maxLength).replace(/\s+\S*$/, "") + "…";
 }
 
-async function requireAuth() {
+export async function requireAuth() {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
   if ((session.user as { role?: string }).role !== "ADMIN") throw new Error("Forbidden");
