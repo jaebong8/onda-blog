@@ -122,3 +122,34 @@ model TagsOnPosts {
 
   @@id([postId, tagId])
 }
+
+model HygieneGrade {
+  id            String   @id @default(cuid())
+  lcnsNo        String   @unique  // 인허가번호
+  bizName       String            // 업소명
+  industryName  String            // 업종
+  grade         String            // 지정등급
+  assignOrgName String            // 지정기관
+  assignNo      String?           // 지정번호
+  address       String            // 주소
+  siDo          String            // 시도
+  siGunGu       String            // 시군구
+  phone         String?           // 전화번호
+  presidentName String?           // 대표자
+  bizRegNo      String?           // 사업자등록번호
+  assignFrom    String?           // 지정시작일자
+  assignTo      String?           // 지정종료일자
+  assignedAt    String?           // 지정일자
+  canceledAt    String?           // 지정취소일자
+  bizStatus     String?           // 영업상태
+  closedAt      String?           // 폐업일자
+  changedAt     String?           // 변경일자
+  instituteName String?           // 인허가관할기관
+  syncedAt      DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([siDo])
+  @@index([siGunGu])
+  @@index([grade])
+  @@index([changedAt])
+}

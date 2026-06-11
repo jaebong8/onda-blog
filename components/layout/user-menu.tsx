@@ -19,11 +19,18 @@ export async function UserMenu() {
   return (
     <div className="flex items-center gap-2">
       <ProviderIcon provider={session.user.provider} size={28} />
-      <span className="text-sm hidden sm:block max-w-32 truncate">
-        {session.user.email && !session.user.email.endsWith("@oauth.local")
-          ? session.user.email
-          : session.user.name}
-      </span>
+      {(() => {
+        const isRealEmail = session.user.email && !session.user.email.endsWith("@oauth.local");
+        const label = isRealEmail
+          ? session.user.email!.split("@")[0]
+          : session.user.name;
+        const title = isRealEmail ? session.user.email! : undefined;
+        return (
+          <span className="text-sm hidden sm:block max-w-32 truncate" title={title}>
+            {label}
+          </span>
+        );
+      })()}
       <form
         action={async () => {
           "use server";
