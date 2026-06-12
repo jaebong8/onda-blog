@@ -61,7 +61,6 @@ export async function getHygienePrompt(siDo: string, siGunGu?: string) {
   const where = {
     siDo,
     ...(siGunGu ? { siGunGu } : {}),
-    bizStatus: { not: "폐업" },
   };
 
   const [gradeStats, topBizzes] = await Promise.all([
@@ -72,8 +71,8 @@ export async function getHygienePrompt(siDo: string, siGunGu?: string) {
       orderBy: { _count: { grade: "desc" } },
     }),
     prisma.hygieneGrade.findMany({
-      where: { ...where, grade: { in: ["매우우수", "우수"] } },
-      orderBy: [{ grade: "asc" }, { assignedAt: "desc" }],
+      where,
+      orderBy: { assignedAt: "desc" },
       take: 30,
       select: { bizName: true, industryName: true, address: true, grade: true },
     }),
@@ -136,7 +135,6 @@ export async function generateHygienePost(siDo: string, siGunGu?: string) {
   const where = {
     siDo,
     ...(siGunGu ? { siGunGu } : {}),
-    bizStatus: { not: "폐업" },
   };
 
   const [gradeStats, topBizzes] = await Promise.all([
