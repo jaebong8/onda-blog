@@ -19,7 +19,7 @@ export function SyncButton() {
     startTransition(async () => {
       setResult(null);
       const res = await syncHygieneData(30);
-      if ("error" in res) {
+      if ("error" in res && res.error) {
         setResult(`오류: ${res.error}`);
       } else {
         setResult(`완료: ${res.upserted}건 동기화 (전체 ${res.total}건 중)`);
@@ -57,7 +57,7 @@ export function GeneratePostButton({ siDoList }: { siDoList: string[] }) {
     startTransition(async () => {
       setResult(null);
       const res = await generateHygienePost(siDo, siGunGu.trim() || undefined);
-      if ("error" in res) {
+      if ("error" in res && res.error) {
         setResult({ type: "error", message: res.error });
       } else {
         setResult({
