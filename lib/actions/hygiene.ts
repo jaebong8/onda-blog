@@ -63,86 +63,36 @@ export async function getHygienePrompt(siDo: string, siGunGu?: string) {
     ...(siGunGu ? { siGunGu } : {}),
   };
 
-  const [total, industryStats, siGunGuStats, bizList] = await Promise.all([
-    prisma.hygieneGrade.count({ where }),
-    prisma.hygieneGrade.groupBy({
-      by: ["industryName"],
-      where,
-      _count: { industryName: true },
-      orderBy: { _count: { industryName: "desc" } },
-      take: 10,
-    }),
-    !siGunGu
-      ? prisma.hygieneGrade.groupBy({
-          by: ["siGunGu"],
-          where,
-          _count: { siGunGu: true },
-          orderBy: { _count: { siGunGu: "desc" } },
-          take: 10,
-        })
-      : Promise.resolve([]),
-    prisma.hygieneGrade.findMany({
-      where,
-      orderBy: { assignedAt: "desc" },
-      take: 30,
-      select: { bizName: true, industryName: true, address: true, assignFrom: true, assignTo: true },
-    }),
-  ]);
+  const today = new Date().toISOString().slice(0, 10).replace(/-/g, ""); // YYYYMMDD
+
+  const activeWhere = {
+    ...where,
+    assignFrom: { lte: today },
+    assignTo: { gte: today },
+    bizStatus: { not: "폐업" },
+  };
 
   const location = siGunGu ? `${siDo} ${siGunGu}` : siDo;
 
-  if (total === 0) {
-    return { error: `${location}에 해당하는 위생등급 데이터가 없습니다.` };
+  const bizList = await prisma.hygieneGrade.findMany({
+    where: activeWhere,
+    orderBy: { bizName: "asc" },
+    select: { bizName: true, address: true, bizStatus: true },
+  });
+
+  if (bizList.length === 0) {
+    return { error: `${location}에 현재 유효한 위생등급 인증 업소가 없습니다.` };
   }
 
-  const industryText = industryStats
-    .map((s) => `${s.industryName} ${s._count.industryName}개`)
-    .join(", ");
-
-  const siGunGuText = siGunGuStats.length > 0
-    ? siGunGuStats.map((s) => `${s.siGunGu} ${s._count.siGunGu}개`).join(", ")
-    : "";
-
-  const bizText = bizList
-    .map((b) => `- ${b.bizName} (${b.industryName}) / ${b.address}${b.assignFrom ? ` / 인증: ${b.assignFrom}~${b.assignTo ?? ""}` : ""}`)
+  const lines = bizList
+    .map((b) => `${b.bizName} | ${b.address} | ${b.bizStatus ?? "정상"}`)
     .join("\n");
 
-  const prompt = `아래는 식품의약품안전처 공공데이터 기반 ${location} 식품접객업소 위생등급 인증 현황입니다.
-이 데이터를 바탕으로 SEO에 최적화된 블로그 글을 작성해주세요.
+  const prompt = `지역: ${location}
+기준일: ${today.slice(0, 4)}-${today.slice(4, 6)}-${today.slice(6, 8)}
+총 ${bizList.length}개소
 
-## 지역
-${location}
-
-## 위생등급 인증 업소 현황
-- 총 인증 업소: ${total}개소
-- 업종별: ${industryText}
-${siGunGuText ? `- 지역별: ${siGunGuText}` : ""}
-
-## 인증 업소 목록 (최근 인증 순)
-${bizText}
-
-## 위생등급 제도 안내
-- 식품의약품안전처가 위생 수준이 우수한 음식점을 공식 인증하는 제도
-- 인증 유효기간: 2년 (갱신 가능)
-- 인증 업소는 위생등급 마크 부착 가능
-
-## 작성 요구사항
-- 제목: "${location} 위생등급 인증 맛집" 키워드 포함, 클릭하고 싶은 제목
-- 메타 설명: 160자 이내
-- 본문: HTML 형식 (h2, h3, p, ul 태그 사용)
-- 구성: 1) 위생등급 인증 제도란?, 2) ${location} 인증 현황, 3) 인증 업소 소개, 4) 마무리
-- 자연스러운 한국어, 독자 친화적 문체
-- 출처 언급: 식품의약품안전처 공공데이터
-
-## 응답 형식
-**제목:**
-(제목)
-
-**메타 설명:**
-(메타 설명)
-
-**본문:**
-(HTML 본문)`;
+${lines}`;
 
   return { ok: true, prompt };
 }
