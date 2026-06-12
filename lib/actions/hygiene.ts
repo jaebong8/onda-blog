@@ -54,6 +54,78 @@ export async function syncHygieneData(daysBack = 30) {
   }
 }
 
+// 선택한 지역 데이터를 AI 프롬프트 텍스트로 반환
+export async function getHygienePrompt(siDo: string, siGunGu?: string) {
+  await requireAuth();
+
+  const where = {
+    siDo,
+    ...(siGunGu ? { siGunGu } : {}),
+    bizStatus: { not: "폐업" },
+  };
+
+  const [gradeStats, topBizzes] = await Promise.all([
+    prisma.hygieneGrade.groupBy({
+      by: ["grade"],
+      where,
+      _count: { grade: true },
+      orderBy: { _count: { grade: "desc" } },
+    }),
+    prisma.hygieneGrade.findMany({
+      where: { ...where, grade: { in: ["매우우수", "우수"] } },
+      orderBy: [{ grade: "asc" }, { assignedAt: "desc" }],
+      take: 30,
+      select: { bizName: true, industryName: true, address: true, grade: true },
+    }),
+  ]);
+
+  const location = siGunGu ? `${siDo} ${siGunGu}` : siDo;
+
+  if (gradeStats.length === 0) {
+    return { error: `${location}에 해당하는 위생등급 데이터가 없습니다.` };
+  }
+
+  const statsText = gradeStats
+    .map((s) => `${s.grade}: ${s._count.grade}개소`)
+    .join(", ");
+
+  const bizList = topBizzes
+    .map((b) => `- [${b.grade}] ${b.bizName} (${b.industryName}) / ${b.address}`)
+    .join("\n");
+
+  const prompt = `아래는 식품의약품안전처 공공데이터 기반 ${location} 식품접객업소 위생등급 현황입니다.
+이 데이터를 분석해서 SEO에 최적화된 블로그 글을 작성해주세요.
+
+## 지역
+${location}
+
+## 위생등급 현황
+${statsText}
+
+## 주요 업소 목록
+${bizList}
+
+## 작성 요구사항
+- 제목: 검색량 높은 키워드 포함, 클릭하고 싶은 제목
+- 메타 설명: 160자 이내
+- 본문: HTML 형식 (h2, h3, p, ul 태그 사용)
+- 구성: 1) 위생등급이란?, 2) ${location} 현황 통계, 3) 주요 업소 소개, 4) 마무리
+- 자연스러운 한국어, 독자 친화적 문체
+- 어디서 데이터를 가져왔는지 출처 언급 (식품의약품안전처)
+
+## 응답 형식
+**제목:**
+(제목)
+
+**메타 설명:**
+(메타 설명)
+
+**본문:**
+(HTML 본문)`;
+
+  return { ok: true, prompt };
+}
+
 // 선택한 지역/조건 기반으로 AI 블로그 글 초안 생성
 export async function generateHygienePost(siDo: string, siGunGu?: string) {
   const authorId = await requireAuth();

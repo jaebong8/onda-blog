@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { SyncButton, GeneratePostButton } from "./_components/hygiene-actions";
+import { SyncButton, CopyPromptButton } from "./_components/hygiene-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -66,10 +66,10 @@ export default async function HygienePage() {
       {/* AI 블로그 글 생성 */}
       <div className="rounded-lg border bg-card p-6 space-y-3">
         <div>
-          <h2 className="font-semibold">AI 블로그 글 생성</h2>
+          <h2 className="font-semibold">블로그 글 프롬프트 복사</h2>
           <p className="text-sm text-muted-foreground">
-            지역을 선택하면 Claude가 위생등급 데이터를 분석해 블로그 초안을 생성합니다.
-            생성된 글은 비공개 초안으로 저장됩니다.
+            지역을 선택하면 DB 데이터를 기반으로 프롬프트를 생성해 클립보드에 복사합니다.
+            Claude.ai 또는 ChatGPT에 붙여넣어 블로그 글을 받으세요.
           </p>
         </div>
         {total === 0 ? (
@@ -77,7 +77,7 @@ export default async function HygienePage() {
             먼저 데이터를 동기화하세요.
           </p>
         ) : (
-          <GeneratePostButton siDoList={siDoList} />
+          <CopyPromptButton siDoList={siDoList} />
         )}
       </div>
 

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { syncHygieneData, generateHygienePost } from "@/lib/actions/hygiene";
+import { syncHygieneData, getHygienePrompt } from "@/lib/actions/hygiene";
 
 const SI_DO_LIST = [
   "서울특별시", "부산광역시", "대구광역시", "인천광역시", "광주광역시",
@@ -46,38 +46,46 @@ export function SyncButton() {
   );
 }
 
-export function GeneratePostButton({ siDoList }: { siDoList: string[] }) {
+export function CopyPromptButton({ siDoList }: { siDoList: string[] }) {
   const [isPending, startTransition] = useTransition();
-  const [result, setResult] = useState<{ type: "success" | "error"; message: string; link?: string } | null>(null);
   const [siDo, setSiDo] = useState(siDoList[0] ?? SI_DO_LIST[0]);
   const [siGunGu, setSiGunGu] = useState("");
-  const router = useRouter();
+  const [status, setStatus] = useState<"idle" | "copied" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [prompt, setPrompt] = useState("");
 
-  function handleGenerate() {
+  const displayList = siDoList.length > 0 ? siDoList : SI_DO_LIST;
+
+  function handleCopy() {
     startTransition(async () => {
-      setResult(null);
-      const res = await generateHygienePost(siDo, siGunGu.trim() || undefined);
+      setStatus("idle");
+      setPrompt("");
+      const res = await getHygienePrompt(siDo, siGunGu.trim() || undefined);
       if ("error" in res && res.error) {
-        setResult({ type: "error", message: res.error });
-      } else {
-        setResult({
-          type: "success",
-          message: "초안 생성 완료!",
-          link: `/admin/posts/${res.postId}/edit`,
-        });
-        router.refresh();
+        setStatus("error");
+        setErrorMsg(res.error);
+        return;
+      }
+      const text = res.prompt ?? "";
+      setPrompt(text);
+      try {
+        await navigator.clipboard.writeText(text);
+        setStatus("copied");
+        setTimeout(() => setStatus("idle"), 3000);
+      } catch {
+        // clipboard 실패 시 텍스트 영역 표시로 fallback
+        setStatus("error");
+        setErrorMsg("클립보드 복사 실패 — 아래 텍스트를 직접 복사하세요.");
       }
     });
   }
 
-  const displayList = siDoList.length > 0 ? siDoList : SI_DO_LIST;
-
   return (
     <div className="space-y-3">
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2 flex-wrap items-center">
         <select
           value={siDo}
-          onChange={(e) => setSiDo(e.target.value)}
+          onChange={(e) => { setSiDo(e.target.value); setStatus("idle"); setPrompt(""); }}
           className="px-3 py-2 rounded-md border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         >
           {displayList.map((s) => (
@@ -87,27 +95,54 @@ export function GeneratePostButton({ siDoList }: { siDoList: string[] }) {
         <input
           type="text"
           value={siGunGu}
-          onChange={(e) => setSiGunGu(e.target.value)}
+          onChange={(e) => { setSiGunGu(e.target.value); setStatus("idle"); setPrompt(""); }}
           placeholder="시군구 (선택, 예: 강남구)"
-          className="px-3 py-2 rounded-md border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring w-48"
+          className="px-3 py-2 rounded-md border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring w-44"
         />
         <button
-          onClick={handleGenerate}
+          onClick={handleCopy}
           disabled={isPending}
-          className="px-4 py-2 rounded-md bg-green-600 text-white text-sm hover:bg-green-700 disabled:opacity-50 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90 disabled:opacity-50 transition-colors"
         >
-          {isPending ? "AI 생성 중..." : "AI 블로그 글 생성"}
+          {isPending ? (
+            "데이터 조회 중..."
+          ) : status === "copied" ? (
+            <>
+              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+              복사됨!
+            </>
+          ) : (
+            <>
+              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+              </svg>
+              프롬프트 복사
+            </>
+          )}
         </button>
       </div>
-      {result && (
-        <p className={`text-sm ${result.type === "error" ? "text-destructive" : "text-green-600 dark:text-green-400"}`}>
-          {result.message}{" "}
-          {result.link && (
-            <a href={result.link} className="underline font-medium">
-              글 편집하기 →
-            </a>
-          )}
+
+      {status === "copied" && (
+        <p className="text-sm text-green-600 dark:text-green-400">
+          클립보드에 복사됐습니다. Claude.ai 또는 ChatGPT에 붙여넣으세요.
         </p>
+      )}
+
+      {status === "error" && (
+        <div className="space-y-2">
+          <p className="text-sm text-destructive">{errorMsg}</p>
+          {prompt && (
+            <textarea
+              readOnly
+              value={prompt}
+              rows={8}
+              className="w-full rounded-md border bg-muted px-3 py-2 text-xs font-mono resize-y focus:outline-none"
+              onClick={(e) => (e.target as HTMLTextAreaElement).select()}
+            />
+          )}
+        </div>
       )}
     </div>
   );
