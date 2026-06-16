@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { fetchSiGunGuCodes, fetchAptDeals, AptDeal } from "@/lib/apt-trade-api";
 
+export const maxDuration = 300;
+
 const SIDO_LIST = [
   "서울특별시",
   "부산광역시",
@@ -51,6 +53,11 @@ export async function GET(request: Request) {
   const apiKey = process.env.APT_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "APT_API_KEY not set" }, { status: 500 });
 
+  const { searchParams } = new URL(request.url);
+  const dryRun = searchParams.get("dry") === "true";
+  const sidoFilter = searchParams.get("sido");
+  const debug = searchParams.get("debug") === "true";
+
   // 전월 YYYYMM
   const now = new Date();
   const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -59,9 +66,10 @@ export async function GET(request: Request) {
   const admin = await prisma.user.findFirst({ where: { role: "ADMIN" } });
   if (!admin) return NextResponse.json({ error: "No admin user" }, { status: 500 });
 
-  const results: { sido: string; status: string; count?: number }[] = [];
+  const targetList = sidoFilter ? SIDO_LIST.filter((s) => s === sidoFilter) : SIDO_LIST;
+  const results: { sido: string; status: string; count?: number; top10?: AptDeal[]; lawdCds?: string[]; rawCount?: number }[] = [];
 
-  for (const sido of SIDO_LIST) {
+  for (const sido of targetList) {
     try {
       const lawdCds = await fetchSiGunGuCodes(sido, apiKey);
       if (lawdCds.length === 0) {
@@ -69,16 +77,25 @@ export async function GET(request: Request) {
         continue;
       }
 
-      // 시군구별 병렬 조회
-      const dealArrays = await Promise.all(
-        lawdCds.map((cd) => fetchAptDeals(cd, dealYmd, apiKey).catch(() => [] as AptDeal[]))
-      );
-      const allDeals = dealArrays.flat();
+      // 시군구별 병렬 조회 (5개씩 배치 처리)
+      const allDeals: AptDeal[] = [];
+      for (let i = 0; i < lawdCds.length; i += 5) {
+        const batch = lawdCds.slice(i, i + 5);
+        const batchResults = await Promise.all(
+          batch.map((cd) => fetchAptDeals(cd, dealYmd, apiKey).catch(() => [] as AptDeal[]))
+        );
+        allDeals.push(...batchResults.flat());
+      }
 
       const top10 = allDeals.sort((a, b) => b.dealAmount - a.dealAmount).slice(0, 10);
 
       if (top10.length === 0) {
-        results.push({ sido, status: "no_deals" });
+        results.push({ sido, status: "no_deals", ...(debug && { lawdCds, rawCount: allDeals.length }) });
+        continue;
+      }
+
+      if (dryRun) {
+        results.push({ sido, status: "dry_run", count: top10.length, top10 });
         continue;
       }
 
@@ -107,7 +124,7 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, dealYmd, results });
+  return NextResponse.json({ ok: true, dealYmd, dryRun, results });
 }
 
 function buildPost(sido: string, dealYmd: string, top10: AptDeal[]) {
