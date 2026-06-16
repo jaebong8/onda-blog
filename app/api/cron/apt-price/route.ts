@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { fetchSiGunGuCodes, fetchAptDeals, AptDeal } from "@/lib/apt-trade-api";
+import { SIDO_LAWD_CODES, fetchAptDeals, AptDeal } from "@/lib/apt-trade-api";
 
 const SIDO_LIST = [
   "서울특별시",
@@ -63,7 +63,7 @@ export async function GET(request: Request) {
 
   for (const sido of SIDO_LIST) {
     try {
-      const lawdCds = await fetchSiGunGuCodes(sido, apiKey);
+      const lawdCds = SIDO_LAWD_CODES[sido] ?? [];
       if (lawdCds.length === 0) {
         results.push({ sido, status: "no_lawdcds" });
         continue;
