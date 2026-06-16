@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
@@ -16,9 +17,12 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const { page: pageParam } = await searchParams;
   const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
   const canonical = page > 1 ? `${siteUrl}/posts?page=${page}` : `${siteUrl}/posts`;
+  const title = page > 1 ? `전체 글 - ${page}페이지` : "전체 글";
+  const description =
+    page > 1 ? `모든 블로그 글 목록입니다. (${page}페이지)` : "모든 블로그 글 목록입니다.";
   return {
-    title: "전체 글",
-    description: "모든 블로그 글 목록입니다.",
+    title,
+    description,
     alternates: { canonical },
   };
 }
@@ -48,6 +52,7 @@ export default async function PostsPage({ searchParams }: Props) {
   ]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  if (page > totalPages) notFound();
 
   return (
     <div className="space-y-10">
