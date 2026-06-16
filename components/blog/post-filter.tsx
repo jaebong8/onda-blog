@@ -1,6 +1,3 @@
-"use client";
-
-import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { formatDate } from "@/lib/utils/date";
@@ -28,45 +25,24 @@ type Props = {
 };
 
 export function PostFilter({ posts, categories }: Props) {
-  const [selected, setSelected] = useState<string | null>(null);
-
-  const filtered = selected
-    ? posts.filter((p) => p.category?.slug === selected)
-    : posts;
-
   return (
     <div className="space-y-12">
-      {/* 카테고리 필터 */}
+      {/* 카테고리 목록 */}
       {categories.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
             카테고리
           </h2>
           <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setSelected(null)}
-              className={`px-3 py-1.5 rounded-full border text-sm transition-colors ${
-                selected === null
-                  ? "bg-foreground text-background border-foreground"
-                  : "hover:bg-muted"
-              }`}
-            >
-              전체
-              <span className="ml-1.5 text-xs opacity-70">{posts.length}</span>
-            </button>
             {categories.map((cat) => (
-              <button
+              <Link
                 key={cat.id}
-                onClick={() => setSelected(selected === cat.slug ? null : cat.slug)}
-                className={`px-3 py-1.5 rounded-full border text-sm transition-colors ${
-                  selected === cat.slug
-                    ? "bg-foreground text-background border-foreground"
-                    : "hover:bg-muted"
-                }`}
+                href={`/categories/${cat.slug}`}
+                className="px-3 py-1.5 rounded-full border text-sm transition-colors hover:bg-muted"
               >
                 {cat.name}
                 <span className="ml-1.5 text-xs opacity-70">{cat.postCount}</span>
-              </button>
+              </Link>
             ))}
           </div>
         </section>
@@ -75,15 +51,13 @@ export function PostFilter({ posts, categories }: Props) {
       {/* 글 목록 */}
       <section className="space-y-3">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-          {selected
-            ? categories.find((c) => c.slug === selected)?.name
-            : "최신 글"}
+          최신 글
         </h2>
         <div className="space-y-8">
-          {filtered.length === 0 ? (
+          {posts.length === 0 ? (
             <p className="text-muted-foreground">글이 없습니다.</p>
           ) : (
-            filtered.map((post) => (
+            posts.map((post) => (
               <article key={post.slug} className="group rounded-xl border bg-card p-4 sm:p-5 hover:shadow-sm transition-shadow">
                 <Link href={`/posts/${post.slug}`} className="flex gap-4 sm:gap-6">
                   {post.thumbSrc && (
