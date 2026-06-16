@@ -149,6 +149,14 @@ function formatArea(arStr: string): string {
   return `${ar}㎡ (${pyeong}평)`;
 }
 
+function formatPricePerPyeong(manwon: number, arStr: string): string {
+  const ar = parseFloat(arStr);
+  if (isNaN(ar) || ar === 0) return "-";
+  const pyeong = ar / 3.3058;
+  const perPyeong = Math.round(manwon / pyeong);
+  return formatAmount(perPyeong);
+}
+
 function buildPost(sido: string, dealYmd: string, top10: AptDeal[]) {
   const year = dealYmd.slice(0, 4);
   const month = dealYmd.slice(4, 6);
@@ -160,7 +168,8 @@ function buildPost(sido: string, dealYmd: string, top10: AptDeal[]) {
     .map(
       (deal, i) =>
         `<tr><td>${i + 1}</td><td><strong>${deal.aptNm}</strong><br><small>${deal.sigunguNm} ${deal.umdNm}</small></td>` +
-        `<td>${formatAmount(deal.dealAmount)}</td><td>${formatArea(deal.excluUseAr)}</td><td>${deal.floor}층</td></tr>`
+        `<td>${formatAmount(deal.dealAmount)}</td><td>${formatArea(deal.excluUseAr)}</td>` +
+        `<td>${formatPricePerPyeong(deal.dealAmount, deal.excluUseAr)}</td><td>${deal.floor}층</td></tr>`
     )
     .join("\n");
 
@@ -168,7 +177,7 @@ function buildPost(sido: string, dealYmd: string, top10: AptDeal[]) {
 <p>${year}년 ${month}월 국토교통부에 신고된 ${sido} 아파트 매매 실거래 중 거래금액이 가장 높은 TOP 10을 정리했습니다.</p>
 <table>
 <thead>
-<tr><th>순위</th><th>아파트 (소재지)</th><th>거래금액</th><th>전용면적</th><th>층</th></tr>
+<tr><th>순위</th><th>아파트 (소재지)</th><th>거래금액</th><th>전용면적</th><th>평당가</th><th>층</th></tr>
 </thead>
 <tbody>
 ${rows}
