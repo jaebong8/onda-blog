@@ -157,6 +157,14 @@ function formatPricePerPyeong(manwon: number, arStr: string): string {
   return formatAmount(perPyeong);
 }
 
+function formatBuildYear(buildYear: string, dealYear: string): string {
+  const by = parseInt(buildYear, 10);
+  const dy = parseInt(dealYear, 10);
+  if (isNaN(by) || isNaN(dy)) return `${buildYear}년`;
+  const age = dy - by;
+  return `${buildYear}년 (${age}년차)`;
+}
+
 function buildPost(sido: string, dealYmd: string, top10: AptDeal[]) {
   const year = dealYmd.slice(0, 4);
   const month = dealYmd.slice(4, 6);
@@ -169,7 +177,7 @@ function buildPost(sido: string, dealYmd: string, top10: AptDeal[]) {
       (deal, i) =>
         `<tr><td>${i + 1}</td><td><strong>${deal.aptNm}</strong><br><small>${deal.sigunguNm} ${deal.umdNm}</small></td>` +
         `<td>${formatAmount(deal.dealAmount)}</td><td>${formatArea(deal.excluUseAr)}</td>` +
-        `<td>${formatPricePerPyeong(deal.dealAmount, deal.excluUseAr)}</td><td>${deal.floor}층</td><td>${deal.buildYear}년</td></tr>`
+        `<td>${formatPricePerPyeong(deal.dealAmount, deal.excluUseAr)}</td><td>${deal.floor}층</td><td>${formatBuildYear(deal.buildYear, year)}</td></tr>`
     )
     .join("\n");
 
