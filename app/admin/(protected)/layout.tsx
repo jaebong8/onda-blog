@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { auth, signOut } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
@@ -44,8 +45,8 @@ export default async function AdminLayout({
               태그
             </Link>
           </nav>
-          <div className="ml-auto flex items-center gap-3">
-            <span className="text-sm text-muted-foreground">
+          <div className="ml-auto flex items-center gap-3 pl-3 border-l">
+            <span className="text-sm font-medium">
               {session.user?.name}
             </span>
             <form
@@ -54,7 +55,13 @@ export default async function AdminLayout({
                 await signOut({ redirectTo: "/admin/login" });
               }}
             >
-              <Button variant="outline" size="sm" type="submit">
+              <Button
+                variant="ghost"
+                size="sm"
+                type="submit"
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <LogOut className="size-4" />
                 로그아웃
               </Button>
             </form>
