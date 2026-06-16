@@ -1,0 +1,15 @@
+name: Monthly Gov Subsidy Cron
+
+on:
+  schedule:
+    - cron: "0 6 1 * *" # 매월 1일 06:00 UTC (15:00 KST)
+  workflow_dispatch:
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call gov-subsidy cron endpoint
+        run: |
+          curl -sf -X GET "${{ secrets.SITE_URL }}/api/cron/gov-subsidy" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
