@@ -8,35 +8,53 @@ import { extractFirstImage } from "@/lib/utils/extract-image";
 export const revalidate = 3600;
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const PAGE_SIZE = 20;
 
-export const metadata: Metadata = {
-  title: "전체 글",
-  description: "모든 블로그 글 목록입니다.",
-  alternates: { canonical: `${siteUrl}/posts` },
-};
+type Props = { searchParams: Promise<{ page?: string }> };
 
-export default async function PostsPage() {
-  const posts = await prisma.post.findMany({
-    where: { published: true },
-    orderBy: { publishedAt: "desc" },
-    select: {
-      slug: true,
-      title: true,
-      excerpt: true,
-      content: true,
-      thumbnail: true,
-      publishedAt: true,
-      category: { select: { name: true, slug: true } },
-      tags: { select: { tag: { select: { name: true, slug: true } } } },
-    },
-  });
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const { page: pageParam } = await searchParams;
+  const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
+  const canonical = page > 1 ? `${siteUrl}/posts?page=${page}` : `${siteUrl}/posts`;
+  return {
+    title: "전체 글",
+    description: "모든 블로그 글 목록입니다.",
+    alternates: { canonical },
+  };
+}
+
+export default async function PostsPage({ searchParams }: Props) {
+  const { page: pageParam } = await searchParams;
+  const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
+
+  const [total, posts] = await Promise.all([
+    prisma.post.count({ where: { published: true } }),
+    prisma.post.findMany({
+      where: { published: true },
+      orderBy: { publishedAt: "desc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      select: {
+        slug: true,
+        title: true,
+        excerpt: true,
+        content: true,
+        thumbnail: true,
+        publishedAt: true,
+        category: { select: { name: true, slug: true } },
+        tags: { select: { tag: { select: { name: true, slug: true } } } },
+      },
+    }),
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div className="space-y-10">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">전체 글</h1>
         <p className="text-muted-foreground mt-1">
-          총 {posts.length}개의 글이 있습니다.
+          총 {total}개의 글이 있습니다.
         </p>
       </div>
 
@@ -94,6 +112,36 @@ export default async function PostsPage() {
           })
         )}
       </div>
+
+      {totalPages > 1 && (
+        <nav className="flex items-center justify-center gap-4 pt-4">
+          <Link
+            href={page > 1 ? `/posts?page=${page - 1}` : "/posts"}
+            aria-disabled={page <= 1}
+            className={`text-sm font-medium ${
+              page <= 1
+                ? "text-muted-foreground/40 pointer-events-none"
+                : "hover:underline underline-offset-4"
+            }`}
+          >
+            ← 이전
+          </Link>
+          <span className="text-sm text-muted-foreground">
+            {page} / {totalPages}
+          </span>
+          <Link
+            href={`/posts?page=${page + 1}`}
+            aria-disabled={page >= totalPages}
+            className={`text-sm font-medium ${
+              page >= totalPages
+                ? "text-muted-foreground/40 pointer-events-none"
+                : "hover:underline underline-offset-4"
+            }`}
+          >
+            다음 →
+          </Link>
+        </nav>
+      )}
     </div>
   );
 }

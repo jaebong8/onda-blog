@@ -24,6 +24,7 @@ export default async function HomePage() {
     prisma.post.findMany({
       where: { published: true },
       orderBy: { publishedAt: "desc" },
+      take: 12,
       select: {
         slug: true,
         title: true,
