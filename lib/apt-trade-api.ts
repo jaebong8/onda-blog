@@ -1,5 +1,6 @@
 import { XMLParser } from "fast-xml-parser";
 
+const REGION_API = "http://apis.data.go.kr/1741000/StanReginCd/getStanReginCdList";
 const APT_API = "https://apis.data.go.kr/1613000/RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade";
 
 const xmlParser = new XMLParser({ ignoreAttributes: false, parseTagValue: true });
@@ -13,8 +14,45 @@ export interface AptDeal {
   sggCd: string;
 }
 
-// 시도별 시군구 LAWD_CD (법정동코드 앞 5자리) 하드코딩
-export const SIDO_LAWD_CODES: Record<string, string[]> = {
+// 시도명 → 시군구 LAWD_CD (5자리) 동적 조회
+export async function fetchSiGunGuCodes(sidoNm: string, apiKey: string): Promise<string[]> {
+  const url = new URL(REGION_API);
+  url.searchParams.set("ServiceKey", apiKey);
+  url.searchParams.set("pageNo", "1");
+  url.searchParams.set("numOfRows", "500");
+  url.searchParams.set("type", "json");
+  url.searchParams.set("locatadd_nm", sidoNm);
+
+  const res = await fetch(url.toString());
+  if (!res.ok) throw new Error(`StanReginCd API ${res.status}`);
+
+  const data = await res.json();
+
+  let rows: Record<string, unknown>[] = [];
+
+  if (Array.isArray(data?.StanReginCd)) {
+    const rowSection = data.StanReginCd.find(
+      (x: unknown) => typeof x === "object" && x !== null && "row" in x
+    ) as { row?: unknown } | undefined;
+    const raw = rowSection?.row;
+    rows = Array.isArray(raw) ? raw : raw ? [raw as Record<string, unknown>] : [];
+  } else if (data?.response?.body?.items?.item) {
+    const item = data.response.body.items.item;
+    rows = Array.isArray(item) ? item : [item];
+  }
+
+  // 시군구 레벨: 3-5번째 자리 ≠ 000, 6-10번째 자리 = 00000
+  const codes = rows
+    .map((r) => String(r.region_cd ?? ""))
+    .filter((cd) => cd.length === 10 && cd.slice(5) === "00000" && cd.slice(2, 5) !== "000")
+    .map((cd) => cd.slice(0, 5));
+
+  // API 응답이 비었으면 하드코딩 폴백 사용
+  return codes.length > 0 ? codes : (SIDO_LAWD_CODES[sidoNm] ?? []);
+}
+
+// 행정구역 개편 전까지 폴백으로 사용
+const SIDO_LAWD_CODES: Record<string, string[]> = {
   서울특별시: ["11110","11140","11170","11200","11215","11230","11260","11290","11305","11320","11350","11380","11410","11440","11470","11500","11530","11545","11560","11590","11620","11650","11680","11710","11740"],
   부산광역시: ["26110","26140","26170","26200","26230","26260","26290","26320","26350","26380","26410","26440","26470","26500","26530","26710"],
   대구광역시: ["27110","27140","27170","27200","27230","27260","27290","27710","27720"],
