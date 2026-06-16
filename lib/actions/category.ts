@@ -19,6 +19,8 @@ export async function createCategory(formData: FormData) {
 
   await prisma.category.create({ data: { name, slug, description } });
   revalidatePath("/admin/categories");
+  revalidatePath("/");
+  revalidatePath(`/categories/${encodeURIComponent(slug)}`);
 }
 
 export async function updateCategory(id: string, formData: FormData) {
@@ -27,13 +29,22 @@ export async function updateCategory(id: string, formData: FormData) {
   const slug = (formData.get("slug") as string).trim() || generateSlug(name);
   const description = (formData.get("description") as string).trim() || null;
 
+  const existing = await prisma.category.findUnique({ where: { id }, select: { slug: true } });
   await prisma.category.update({ where: { id }, data: { name, slug, description } });
+
   revalidatePath("/admin/categories");
+  revalidatePath("/");
+  if (existing) revalidatePath(`/categories/${encodeURIComponent(existing.slug)}`);
+  revalidatePath(`/categories/${encodeURIComponent(slug)}`);
   redirect("/admin/categories");
 }
 
 export async function deleteCategory(id: string) {
   await requireAuth();
+  const existing = await prisma.category.findUnique({ where: { id }, select: { slug: true } });
   await prisma.category.delete({ where: { id } });
+
   revalidatePath("/admin/categories");
+  revalidatePath("/");
+  if (existing) revalidatePath(`/categories/${encodeURIComponent(existing.slug)}`);
 }

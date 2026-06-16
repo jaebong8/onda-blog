@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/utils/date";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
@@ -17,12 +18,37 @@ export async function generateStaticParams() {
   }
 }
 
+const getTagWithPosts = cache(async (slug: string) => {
+  const tag = await prisma.tag.findUnique({
+    where: { slug },
+    select: { id: true, name: true, slug: true },
+  });
+  if (!tag) return null;
+
+  const posts = await prisma.post.findMany({
+    where: {
+      published: true,
+      tags: { some: { tagId: tag.id } },
+    },
+    orderBy: { publishedAt: "desc" },
+    select: {
+      slug: true,
+      title: true,
+      excerpt: true,
+      publishedAt: true,
+    },
+  });
+
+  return { tag, posts };
+});
+
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const tag = await prisma.tag.findUnique({ where: { slug: decodeURIComponent(slug) } });
-  if (!tag) return {};
+  const result = await getTagWithPosts(decodeURIComponent(slug));
+  if (!result) return {};
+  const { tag } = result;
   const canonical = `${siteUrl}/tags/${slug}`;
   const description = `${tag.name} 태그의 글 목록`;
   return {
@@ -40,26 +66,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function TagPage({ params }: Props) {
   const { slug } = await params;
 
-  const tag = await prisma.tag.findUnique({
-    where: { slug: decodeURIComponent(slug) },
-    select: { id: true, name: true, slug: true },
-  });
+  const result = await getTagWithPosts(decodeURIComponent(slug));
 
-  if (!tag) notFound();
-
-  const posts = await prisma.post.findMany({
-    where: {
-      published: true,
-      tags: { some: { tagId: tag.id } },
-    },
-    orderBy: { publishedAt: "desc" },
-    select: {
-      slug: true,
-      title: true,
-      excerpt: true,
-      publishedAt: true,
-    },
-  });
+  if (!result) notFound();
+  const { tag, posts } = result;
 
   return (
     <div className="space-y-10">

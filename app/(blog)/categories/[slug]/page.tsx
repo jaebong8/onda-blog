@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/utils/date";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
@@ -17,11 +18,30 @@ export async function generateStaticParams() {
   }
 }
 
+const getCategory = cache(async (slug: string) => {
+  return prisma.category.findUnique({
+    where: { slug },
+    include: {
+      posts: {
+        where: { published: true },
+        orderBy: { publishedAt: "desc" },
+        select: {
+          slug: true,
+          title: true,
+          excerpt: true,
+          publishedAt: true,
+          tags: { select: { tag: { select: { name: true, slug: true } } } },
+        },
+      },
+    },
+  });
+});
+
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const category = await prisma.category.findUnique({ where: { slug: decodeURIComponent(slug) } });
+  const category = await getCategory(decodeURIComponent(slug));
   if (!category) return {};
   const canonical = `${siteUrl}/categories/${slug}`;
   const description = category.description ?? `${category.name} 카테고리의 글 목록`;
@@ -40,22 +60,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function CategoryPage({ params }: Props) {
   const { slug } = await params;
 
-  const category = await prisma.category.findUnique({
-    where: { slug: decodeURIComponent(slug) },
-    include: {
-      posts: {
-        where: { published: true },
-        orderBy: { publishedAt: "desc" },
-        select: {
-          slug: true,
-          title: true,
-          excerpt: true,
-          publishedAt: true,
-          tags: { select: { tag: { select: { name: true, slug: true } } } },
-        },
-      },
-    },
-  });
+  const category = await getCategory(decodeURIComponent(slug));
 
   if (!category) notFound();
 

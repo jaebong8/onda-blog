@@ -13,7 +13,7 @@ import { ShareButtons } from "@/components/blog/share-buttons";
 import { PostLikeButton } from "@/components/blog/post-like-button";
 import { CommentSection } from "@/components/blog/comment-section";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 

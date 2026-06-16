@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { extractFirstImage } from "@/lib/utils/extract-image";
 import { PostFilter } from "@/components/blog/post-filter";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 const siteName = process.env.NEXT_PUBLIC_SITE_NAME ?? "My Blog";

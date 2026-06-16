@@ -17,10 +17,13 @@ export async function createTag(formData: FormData) {
 
   await prisma.tag.create({ data: { name, slug } });
   revalidatePath("/admin/tags");
+  revalidatePath(`/tags/${encodeURIComponent(slug)}`);
 }
 
 export async function deleteTag(id: string) {
   await requireAuth();
+  const existing = await prisma.tag.findUnique({ where: { id }, select: { slug: true } });
   await prisma.tag.delete({ where: { id } });
   revalidatePath("/admin/tags");
+  if (existing) revalidatePath(`/tags/${encodeURIComponent(existing.slug)}`);
 }
