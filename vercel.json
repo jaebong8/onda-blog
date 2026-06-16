@@ -1,12 +1,13 @@
 {
+  "regions": ["sin1"],
   "crons": [
-    {
-      "path": "/api/cron/hygiene",
-      "schedule": "0 3 * * 0"
-    },
     {
       "path": "/api/cron/apt-price",
       "schedule": "0 4 1 * *"
+    },
+    {
+      "path": "/api/cron/apt-rent",
+      "schedule": "0 5 1 * *"
     }
   ]
 }

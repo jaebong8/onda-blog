@@ -2,6 +2,7 @@ import { XMLParser } from "fast-xml-parser";
 
 const REGION_API = "http://apis.data.go.kr/1741000/StanReginCd/getStanReginCdList";
 const APT_API = "https://apis.data.go.kr/1613000/RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade";
+const APT_RENT_API = "https://apis.data.go.kr/1613000/RTMSDataSvcAptRent/getRTMSDataSvcAptRent";
 
 const xmlParser = new XMLParser({ ignoreAttributes: false, parseTagValue: true });
 
@@ -141,4 +142,69 @@ export async function fetchAptDeals(lawdCd: string, dealYmd: string, apiKey: str
       cdealType: String(item.cdealType ?? "").trim(),
     }))
     .filter((d) => d.dealAmount > 0 && d.cdealType !== "O");
+}
+
+export interface AptRentDeal {
+  aptNm: string;
+  jibun: string;
+  excluUseAr: string;
+  floor: string;
+  umdNm: string;
+  sggCd: string;
+  buildYear: string; // 건축년도
+  dealYear: string;
+  dealMonth: string;
+  dealDay: string;
+  deposit: number; // 보증금 (만원)
+  monthlyRent: number; // 월세금 (만원, 0이면 전세)
+  contractTerm: string; // 계약기간
+  contractType: string; // 계약구분 (신규/갱신)
+  useRRRight: string; // 갱신요구권 사용여부
+  preDeposit: string; // 이전 보증금
+  preMonthlyRent: string; // 이전 월세금
+}
+
+// 특정 시군구 + 계약월 전월세 실거래가 목록
+export async function fetchAptRentDeals(lawdCd: string, dealYmd: string, apiKey: string): Promise<AptRentDeal[]> {
+  const url = new URL(APT_RENT_API);
+  url.searchParams.set("serviceKey", apiKey);
+  url.searchParams.set("LAWD_CD", lawdCd);
+  url.searchParams.set("DEAL_YMD", dealYmd);
+  url.searchParams.set("numOfRows", "1000");
+  url.searchParams.set("pageNo", "1");
+
+  const res = await fetch(url.toString());
+  if (!res.ok) throw new Error(`AptRent API ${res.status} for ${lawdCd}`);
+
+  const xml = await res.text();
+  const parsed = xmlParser.parse(xml);
+
+  const resultCode = parsed?.response?.header?.resultCode;
+  if (resultCode && resultCode !== "00" && resultCode !== 0) return [];
+
+  const items = parsed?.response?.body?.items?.item;
+  if (!items) return [];
+
+  const arr: Record<string, unknown>[] = Array.isArray(items) ? items : [items];
+  return arr
+    .map((item) => ({
+      aptNm: String(item.aptNm ?? "").trim(),
+      jibun: String(item.jibun ?? "").trim(),
+      excluUseAr: String(item.excluUseAr ?? "").trim(),
+      floor: String(item.floor ?? "").trim(),
+      umdNm: String(item.umdNm ?? "").trim(),
+      sggCd: String(item.sggCd ?? ""),
+      buildYear: String(item.buildYear ?? "").trim(),
+      dealYear: String(item.dealYear ?? "").trim(),
+      dealMonth: String(item.dealMonth ?? "").trim(),
+      dealDay: String(item.dealDay ?? "").trim(),
+      deposit: parseInt(String(item.deposit ?? "0").replace(/,/g, ""), 10),
+      monthlyRent: parseInt(String(item.monthlyRent ?? "0").replace(/,/g, ""), 10),
+      contractTerm: String(item.contractTerm ?? "").trim(),
+      contractType: String(item.contractType ?? "").trim(),
+      useRRRight: String(item.useRRRight ?? "").trim(),
+      preDeposit: String(item.preDeposit ?? "").trim(),
+      preMonthlyRent: String(item.preMonthlyRent ?? "").trim(),
+    }))
+    .filter((d) => d.deposit > 0);
 }
