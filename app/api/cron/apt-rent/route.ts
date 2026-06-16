@@ -193,9 +193,9 @@ function contractLabel(deal: AptRentDeal): string {
 function buildJeonseRows(deals: AptRentDeal[], year: string): string {
   return deals
     .map((deal, i) => (
-      `<tr><td>${i + 1}</td><td><strong>${deal.aptNm}</strong><br><small>${deal.umdNm} ${deal.jibun}</small></td>` +
-      `<td>${formatAmount(deal.deposit)}</td><td>${formatArea(deal.excluUseAr)}</td>` +
-      `<td>${formatPerPyeong(deal.deposit, deal.excluUseAr)}</td><td>${deal.floor}층</td>` +
+      `<tr><td class="rank">${i + 1}</td><td><strong>${deal.aptNm}</strong><br><small>${deal.umdNm} ${deal.jibun}</small></td>` +
+      `<td class="num">${formatAmount(deal.deposit)}</td><td class="num">${formatArea(deal.excluUseAr)}</td>` +
+      `<td class="num">${formatPerPyeong(deal.deposit, deal.excluUseAr)}</td><td>${deal.floor}층</td>` +
       `<td>${formatBuildYear(deal.buildYear, year)}</td><td>${dealDate(deal)}</td><td>${contractLabel(deal)}</td></tr>`
     ))
     .join("\n");
@@ -204,8 +204,8 @@ function buildJeonseRows(deals: AptRentDeal[], year: string): string {
 function buildWolseRows(deals: AptRentDeal[], year: string): string {
   return deals
     .map((deal, i) => (
-      `<tr><td>${i + 1}</td><td><strong>${deal.aptNm}</strong><br><small>${deal.umdNm} ${deal.jibun}</small></td>` +
-      `<td>${formatAmount(deal.deposit)}</td><td>${deal.monthlyRent.toLocaleString()}만원</td><td>${formatArea(deal.excluUseAr)}</td>` +
+      `<tr><td class="rank">${i + 1}</td><td><strong>${deal.aptNm}</strong><br><small>${deal.umdNm} ${deal.jibun}</small></td>` +
+      `<td class="num">${formatAmount(deal.deposit)}</td><td class="num">${deal.monthlyRent.toLocaleString()}만원</td><td class="num">${formatArea(deal.excluUseAr)}</td>` +
       `<td>${deal.floor}층</td><td>${formatBuildYear(deal.buildYear, year)}</td><td>${dealDate(deal)}</td><td>${contractLabel(deal)}</td></tr>`
     ))
     .join("\n");
@@ -225,7 +225,7 @@ function buildPost(sido: string, dealYmd: string, jeonseTop10: AptRentDeal[], wo
     ? `<h3>전세 보증금 TOP 10</h3>
 <table>
 <thead>
-<tr><th>순위</th><th>아파트 (소재지)</th><th>보증금</th><th>전용면적</th><th>평당보증금</th><th>층</th><th>건축년도</th><th>계약일</th><th>계약구분</th></tr>
+<tr><th class="rank">순위</th><th>아파트 (소재지)</th><th class="num">보증금</th><th class="num">전용면적</th><th class="num">평당보증금</th><th>층</th><th>건축년도</th><th>계약일</th><th>계약구분</th></tr>
 </thead>
 <tbody>
 ${buildJeonseRows(jeonseTop10, year)}
@@ -237,7 +237,7 @@ ${buildJeonseRows(jeonseTop10, year)}
     ? `<h3>월세 TOP 10</h3>
 <table>
 <thead>
-<tr><th>순위</th><th>아파트 (소재지)</th><th>보증금</th><th>월세</th><th>전용면적</th><th>층</th><th>건축년도</th><th>계약일</th><th>계약구분</th></tr>
+<tr><th class="rank">순위</th><th>아파트 (소재지)</th><th class="num">보증금</th><th class="num">월세</th><th class="num">전용면적</th><th>층</th><th>건축년도</th><th>계약일</th><th>계약구분</th></tr>
 </thead>
 <tbody>
 ${buildWolseRows(wolseTop10, year)}

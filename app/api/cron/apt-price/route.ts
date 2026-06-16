@@ -187,9 +187,9 @@ function buildPost(sido: string, dealYmd: string, top10: AptDeal[]) {
       const dealDate = deal.dealDay ? `${month}/${deal.dealDay.padStart(2, "0")}` : "-";
       const dong = deal.aptDong ? `${deal.aptDong}동 ` : "";
       return (
-        `<tr><td>${i + 1}</td><td><strong>${deal.aptNm}</strong><br><small>${deal.sigunguNm} ${deal.umdNm}</small></td>` +
-        `<td>${formatAmount(deal.dealAmount)}</td><td>${formatArea(deal.excluUseAr)}</td>` +
-        `<td>${formatPricePerPyeong(deal.dealAmount, deal.excluUseAr)}</td><td>${dong}${deal.floor}층</td>` +
+        `<tr><td class="rank">${i + 1}</td><td><strong>${deal.aptNm}</strong><br><small>${deal.sigunguNm} ${deal.umdNm}</small></td>` +
+        `<td class="num">${formatAmount(deal.dealAmount)}</td><td class="num">${formatArea(deal.excluUseAr)}</td>` +
+        `<td class="num">${formatPricePerPyeong(deal.dealAmount, deal.excluUseAr)}</td><td>${dong}${deal.floor}층</td>` +
         `<td>${formatBuildYear(deal.buildYear, year)}</td><td>${dealDate}</td><td>${deal.dealingGbn || "-"}</td></tr>`
       );
     })
@@ -199,7 +199,7 @@ function buildPost(sido: string, dealYmd: string, top10: AptDeal[]) {
 <p>${year}년 ${month}월 국토교통부에 신고된 ${sido} 아파트 매매 실거래 중 거래금액이 가장 높은 TOP 10을 정리했습니다. (해제된 거래는 제외)</p>
 <table>
 <thead>
-<tr><th>순위</th><th>아파트 (소재지)</th><th>거래금액</th><th>전용면적</th><th>평당가</th><th>동/층</th><th>건축년도</th><th>계약일</th><th>거래유형</th></tr>
+<tr><th class="rank">순위</th><th>아파트 (소재지)</th><th class="num">거래금액</th><th class="num">전용면적</th><th class="num">평당가</th><th>동/층</th><th>건축년도</th><th>계약일</th><th>거래유형</th></tr>
 </thead>
 <tbody>
 ${rows}
