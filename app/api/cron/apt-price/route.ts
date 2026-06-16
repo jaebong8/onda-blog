@@ -87,7 +87,17 @@ export async function GET(request: Request) {
         allDeals.push(...batchResults.flat());
       }
 
-      const top10 = allDeals.sort((a, b) => b.dealAmount - a.dealAmount).slice(0, 10);
+      // 같은 아파트는 최고가 1건만 유지
+      const aptMap = new Map<string, AptDeal>();
+      for (const deal of allDeals) {
+        const existing = aptMap.get(deal.aptNm);
+        if (!existing || deal.dealAmount > existing.dealAmount) {
+          aptMap.set(deal.aptNm, deal);
+        }
+      }
+      const top10 = Array.from(aptMap.values())
+        .sort((a, b) => b.dealAmount - a.dealAmount)
+        .slice(0, 10);
 
       if (top10.length === 0) {
         results.push({ sido, status: "no_deals", ...(debug && { lawdCds, rawCount: allDeals.length }) });
@@ -127,6 +137,23 @@ export async function GET(request: Request) {
   return NextResponse.json({ ok: true, dealYmd, dryRun, results });
 }
 
+function formatAmount(manwon: number): string {
+  const eok = Math.floor(manwon / 10000);
+  const rem = manwon % 10000;
+  let label: string;
+  if (eok > 0 && rem > 0) label = `${eok}억 ${rem.toLocaleString()}만원`;
+  else if (eok > 0) label = `${eok}억원`;
+  else label = `${manwon.toLocaleString()}만원`;
+  return `${manwon.toLocaleString()}만원 (${label})`;
+}
+
+function formatArea(arStr: string): string {
+  const ar = parseFloat(arStr);
+  if (isNaN(ar)) return `${arStr}㎡`;
+  const pyeong = (ar / 3.3058).toFixed(1);
+  return `${ar}㎡ (${pyeong}평)`;
+}
+
 function buildPost(sido: string, dealYmd: string, top10: AptDeal[]) {
   const year = dealYmd.slice(0, 4);
   const month = dealYmd.slice(4, 6);
@@ -138,7 +165,7 @@ function buildPost(sido: string, dealYmd: string, top10: AptDeal[]) {
     .map(
       (deal, i) =>
         `<tr><td>${i + 1}</td><td><strong>${deal.aptNm}</strong><br><small>${deal.umdNm}</small></td>` +
-        `<td>${deal.dealAmount.toLocaleString()}만원</td><td>${deal.excluUseAr}㎡</td><td>${deal.floor}층</td></tr>`
+        `<td>${formatAmount(deal.dealAmount)}</td><td>${formatArea(deal.excluUseAr)}</td><td>${deal.floor}층</td></tr>`
     )
     .join("\n");
 
