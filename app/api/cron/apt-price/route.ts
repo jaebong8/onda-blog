@@ -169,7 +169,7 @@ function buildPost(sido: string, dealYmd: string, top10: AptDeal[]) {
       (deal, i) =>
         `<tr><td>${i + 1}</td><td><strong>${deal.aptNm}</strong><br><small>${deal.sigunguNm} ${deal.umdNm}</small></td>` +
         `<td>${formatAmount(deal.dealAmount)}</td><td>${formatArea(deal.excluUseAr)}</td>` +
-        `<td>${formatPricePerPyeong(deal.dealAmount, deal.excluUseAr)}</td><td>${deal.floor}층</td></tr>`
+        `<td>${formatPricePerPyeong(deal.dealAmount, deal.excluUseAr)}</td><td>${deal.floor}층</td><td>${deal.buildYear}년</td></tr>`
     )
     .join("\n");
 
@@ -177,7 +177,7 @@ function buildPost(sido: string, dealYmd: string, top10: AptDeal[]) {
 <p>${year}년 ${month}월 국토교통부에 신고된 ${sido} 아파트 매매 실거래 중 거래금액이 가장 높은 TOP 10을 정리했습니다.</p>
 <table>
 <thead>
-<tr><th>순위</th><th>아파트 (소재지)</th><th>거래금액</th><th>전용면적</th><th>평당가</th><th>층</th></tr>
+<tr><th>순위</th><th>아파트 (소재지)</th><th>거래금액</th><th>전용면적</th><th>평당가</th><th>층</th><th>건축년도</th></tr>
 </thead>
 <tbody>
 ${rows}

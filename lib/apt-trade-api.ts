@@ -13,6 +13,7 @@ export interface AptDeal {
   umdNm: string;
   sigunguNm: string; // 시군구명 (estateAgentSggNm)
   sggCd: string;
+  buildYear: string; // 건축년도
 }
 
 // 시도/시명 → 시군구 LAWD_CD (5자리) 동적 조회
@@ -129,6 +130,7 @@ export async function fetchAptDeals(lawdCd: string, dealYmd: string, apiKey: str
       umdNm: String(item.umdNm ?? "").trim(),
       sigunguNm: String(item.estateAgentSggNm ?? "").trim(),
       sggCd: String(item.sggCd ?? ""),
+      buildYear: String(item.buildYear ?? "").trim(),
     }))
     .filter((d) => d.dealAmount > 0);
 }
