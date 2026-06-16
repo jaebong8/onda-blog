@@ -150,6 +150,31 @@ export async function updatePost(id: string, formData: FormData) {
   redirect("/admin/posts");
 }
 
+export async function deletePosts(ids: string[]) {
+  await requireAuth();
+  if (ids.length === 0) return;
+
+  const posts = await prisma.post.findMany({
+    where: { id: { in: ids } },
+    include: {
+      category: { select: { slug: true } },
+      tags: { select: { tag: { select: { slug: true } } } },
+    },
+  });
+
+  await prisma.post.deleteMany({ where: { id: { in: ids } } });
+
+  for (const post of posts) {
+    if (post.category) revalidatePath(`/categories/${encodeURIComponent(post.category.slug)}`);
+    for (const t of post.tags) revalidatePath(`/tags/${encodeURIComponent(t.tag.slug)}`);
+    revalidatePath(`/posts/${encodeURIComponent(post.slug)}`);
+  }
+  revalidatePath("/");
+  revalidatePath("/posts");
+  revalidatePath("/sitemap.xml");
+  revalidatePath("/admin/posts");
+}
+
 export async function deletePost(id: string) {
   await requireAuth();
 
