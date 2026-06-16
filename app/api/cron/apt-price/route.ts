@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { fetchSiGunGuCodes, fetchAptDeals, AptDeal } from "@/lib/apt-trade-api";
+import { generateSlug } from "@/lib/utils/slug";
 
 export const maxDuration = 300;
 
@@ -61,6 +62,12 @@ export async function GET(request: Request) {
   const admin = await prisma.user.findFirst({ where: { role: "ADMIN" } });
   if (!admin) return NextResponse.json({ error: "No admin user" }, { status: 500 });
 
+  const category = await prisma.category.upsert({
+    where: { name: "부동산" },
+    create: { name: "부동산", slug: "real-estate" },
+    update: {},
+  });
+
   const targetList = sidoFilter ? SIDO_LIST.filter((s) => s === sidoFilter) : SIDO_LIST;
   const results: { sido: string; status: string; count?: number; top10?: AptDeal[]; lawdCds?: string[]; rawCount?: number }[] = [];
 
@@ -104,12 +111,34 @@ export async function GET(request: Request) {
         continue;
       }
 
-      const { title, excerpt, content } = buildPost(sido, dealYmd, top10);
+      const { title, excerpt, content, metaTitle, metaDescription, tagNames } = buildPost(sido, dealYmd, top10);
       const slug = `apt-top10-${SIDO_SLUG[sido] ?? sido}-${dealYmd}`;
+
+      const tags = await Promise.all(
+        tagNames.map((name) =>
+          prisma.tag.upsert({
+            where: { name },
+            create: { name, slug: generateSlug(name) },
+            update: {},
+            select: { id: true },
+          })
+        )
+      );
+      const tagIds = tags.map((t) => ({ tagId: t.id }));
 
       await prisma.post.upsert({
         where: { slug },
-        update: { title, excerpt, content, published: true, publishedAt: new Date() },
+        update: {
+          title,
+          excerpt,
+          content,
+          published: true,
+          publishedAt: new Date(),
+          metaTitle,
+          metaDescription,
+          categoryId: category.id,
+          tags: { deleteMany: {}, create: tagIds },
+        },
         create: {
           title,
           slug,
@@ -118,6 +147,10 @@ export async function GET(request: Request) {
           published: true,
           publishedAt: new Date(),
           authorId: admin.id,
+          metaTitle,
+          metaDescription,
+          categoryId: category.id,
+          tags: { create: tagIds },
         },
       });
 
@@ -171,21 +204,28 @@ function buildPost(sido: string, dealYmd: string, top10: AptDeal[]) {
 
   const title = `${year}년 ${month}월 ${sido} 아파트 실거래가 TOP 10`;
   const excerpt = `${year}년 ${month}월 ${sido} 아파트 매매 실거래 최고가 TOP 10입니다. 국토교통부 공공데이터 기준으로 집계했습니다.`;
+  const metaTitle = `${sido} 아파트 실거래가 TOP10 (${year}.${month}) | 매매 최고가 순위`;
+  const metaDescription = `${year}년 ${month}월 ${sido} 아파트 매매 실거래가 순위 TOP10. 국토교통부 실거래가 공개시스템 데이터 기준 최고가 아파트와 평당가, 건축년도를 정리했습니다.`;
+  const tagNames = [sido, "아파트 실거래가", "부동산", `${year}년 ${month}월 아파트값`];
 
   const rows = top10
-    .map(
-      (deal, i) =>
+    .map((deal, i) => {
+      const dealDate = deal.dealDay ? `${month}/${deal.dealDay.padStart(2, "0")}` : "-";
+      const dong = deal.aptDong ? `${deal.aptDong}동 ` : "";
+      return (
         `<tr><td>${i + 1}</td><td><strong>${deal.aptNm}</strong><br><small>${deal.sigunguNm} ${deal.umdNm}</small></td>` +
         `<td>${formatAmount(deal.dealAmount)}</td><td>${formatArea(deal.excluUseAr)}</td>` +
-        `<td>${formatPricePerPyeong(deal.dealAmount, deal.excluUseAr)}</td><td>${deal.floor}층</td><td>${formatBuildYear(deal.buildYear, year)}</td></tr>`
-    )
+        `<td>${formatPricePerPyeong(deal.dealAmount, deal.excluUseAr)}</td><td>${dong}${deal.floor}층</td>` +
+        `<td>${formatBuildYear(deal.buildYear, year)}</td><td>${dealDate}</td><td>${deal.dealingGbn || "-"}</td></tr>`
+      );
+    })
     .join("\n");
 
   const content = `<h2>${year}년 ${month}월 ${sido} 아파트 실거래가 TOP 10</h2>
-<p>${year}년 ${month}월 국토교통부에 신고된 ${sido} 아파트 매매 실거래 중 거래금액이 가장 높은 TOP 10을 정리했습니다.</p>
+<p>${year}년 ${month}월 국토교통부에 신고된 ${sido} 아파트 매매 실거래 중 거래금액이 가장 높은 TOP 10을 정리했습니다. (해제된 거래는 제외)</p>
 <table>
 <thead>
-<tr><th>순위</th><th>아파트 (소재지)</th><th>거래금액</th><th>전용면적</th><th>평당가</th><th>층</th><th>건축년도</th></tr>
+<tr><th>순위</th><th>아파트 (소재지)</th><th>거래금액</th><th>전용면적</th><th>평당가</th><th>동/층</th><th>건축년도</th><th>계약일</th><th>거래유형</th></tr>
 </thead>
 <tbody>
 ${rows}
@@ -193,5 +233,5 @@ ${rows}
 </table>
 <p><small>출처: 국토교통부 아파트매매 실거래 상세 자료 | ${year}년 ${month}월 신고 기준 단일 최고 거래가 순</small></p>`;
 
-  return { title, excerpt, content };
+  return { title, excerpt, content, metaTitle, metaDescription, tagNames };
 }

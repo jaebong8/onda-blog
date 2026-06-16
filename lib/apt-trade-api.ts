@@ -14,6 +14,10 @@ export interface AptDeal {
   sigunguNm: string; // 시군구명 (estateAgentSggNm)
   sggCd: string;
   buildYear: string; // 건축년도
+  dealDay: string; // 계약일
+  dealingGbn: string; // 거래유형 (중개/직거래)
+  aptDong: string; // 동
+  cdealType: string; // 해제여부 ("O" = 해제됨)
 }
 
 // 시도/시명 → 시군구 LAWD_CD (5자리) 동적 조회
@@ -131,6 +135,10 @@ export async function fetchAptDeals(lawdCd: string, dealYmd: string, apiKey: str
       sigunguNm: String(item.estateAgentSggNm ?? "").trim(),
       sggCd: String(item.sggCd ?? ""),
       buildYear: String(item.buildYear ?? "").trim(),
+      dealDay: String(item.dealDay ?? "").trim(),
+      dealingGbn: String(item.dealingGbn ?? "").trim(),
+      aptDong: String(item.aptDong ?? "").trim(),
+      cdealType: String(item.cdealType ?? "").trim(),
     }))
-    .filter((d) => d.dealAmount > 0);
+    .filter((d) => d.dealAmount > 0 && d.cdealType !== "O");
 }
