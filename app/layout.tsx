@@ -20,6 +20,11 @@ export const metadata: Metadata = {
   icons: {
     icon: "/favicon.png",
   },
+  alternates: {
+    types: {
+      "application/rss+xml": "/rss.xml",
+    },
+  },
   title: {
     default: siteName,
     template: `%s | ${siteName}`,
