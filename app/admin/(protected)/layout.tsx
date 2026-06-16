@@ -43,12 +43,6 @@ export default async function AdminLayout({
             >
               태그
             </Link>
-            <Link
-              href="/admin/hygiene"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              위생등급
-            </Link>
           </nav>
           <div className="ml-auto flex items-center gap-3">
             <span className="text-sm text-muted-foreground">
