@@ -36,30 +36,44 @@ function totalCount(data: unknown): number {
   return Number(body?.totalCount ?? 0);
 }
 
-// 사업연도 기준 국고보조사업 공모(공고) 전체 목록 조회 (페이지네이션 자동 처리)
+function makeUrl(bsnsyear: string, apiKey: string, pageNo: number, numOfRows: number): string {
+  const url = new URL(SUBSIDY_API);
+  url.searchParams.set("serviceKey", apiKey);
+  url.searchParams.set("pageNo", String(pageNo));
+  url.searchParams.set("numOfRows", String(numOfRows));
+  url.searchParams.set("resultType", "json");
+  url.searchParams.set("bsnsyear", bsnsyear);
+  return url.toString();
+}
+
+// 사업연도 기준 국고보조사업 공모(공고) 목록 조회
+// 1페이지를 먼저 받아 totalCount 확인 후 나머지를 병렬로 요청
 export async function fetchSubsidyNotices(bsnsyear: string, apiKey: string): Promise<SubsidyNotice[]> {
   const numOfRows = 100;
-  const all: Record<string, unknown>[] = [];
-  let pageNo = 1;
+  const MAX_PAGES = 10;
 
-  while (pageNo <= 50) {
-    const url = new URL(SUBSIDY_API);
-    url.searchParams.set("serviceKey", apiKey);
-    url.searchParams.set("pageNo", String(pageNo));
-    url.searchParams.set("numOfRows", String(numOfRows));
-    url.searchParams.set("resultType", "json");
-    url.searchParams.set("bsnsyear", bsnsyear);
+  // 1페이지로 totalCount 파악
+  const firstRes = await fetch(makeUrl(bsnsyear, apiKey, 1, numOfRows));
+  if (!firstRes.ok) throw new Error(`Subsidy API ${firstRes.status}`);
+  const firstData = await firstRes.json();
 
-    const res = await fetch(url.toString());
-    if (!res.ok) throw new Error(`Subsidy API ${res.status}`);
-    const data = await res.json();
+  const firstItems = normalizeItems(firstData);
+  const total = totalCount(firstData);
+  const maxPage = Math.min(Math.ceil(total / numOfRows), MAX_PAGES);
 
-    const items = normalizeItems(data);
-    all.push(...items);
+  // 2페이지 이후 병렬 요청
+  const rest = maxPage > 1
+    ? await Promise.all(
+        Array.from({ length: maxPage - 1 }, (_, i) =>
+          fetch(makeUrl(bsnsyear, apiKey, i + 2, numOfRows))
+            .then((r) => r.json())
+            .then((d) => normalizeItems(d))
+            .catch(() => [] as Record<string, unknown>[])
+        )
+      )
+    : [];
 
-    if (items.length < numOfRows || all.length >= totalCount(data)) break;
-    pageNo++;
-  }
+  const all = [...firstItems, ...rest.flat()];
 
   return all.map((item) => ({
     pblancNm: String(item.PBLANC_NM ?? "").trim(),
