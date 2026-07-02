@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Call loan-rates cron endpoint
         run: |
-          status=$(curl -s -o response.json -w "%{http_code}" -X GET "${{ secrets.SITE_URL }}/api/cron/loan-rates?dry=true" \
+          status=$(curl -s -o response.json -w "%{http_code}" -X GET "${{ secrets.SITE_URL }}/api/cron/loan-rates" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
           echo "HTTP status: $status"
           cat response.json
