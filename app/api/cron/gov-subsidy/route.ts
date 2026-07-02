@@ -30,19 +30,22 @@ export async function GET(request: Request) {
   }
 
   const openNow = notices.filter((n) => {
-    const begin = parseYmd(n.rceptBeginDe);
-    const end = parseYmd(n.rceptEndDe);
+    // 접수기간 우선, 없으면 공고기간으로 fallback
+    const beginStr = n.rceptBeginDe || n.pblancBeginDe;
+    const endStr = n.rceptEndDe || n.pblancEndDe;
+    const begin = parseYmd(beginStr);
+    const end = parseYmd(endStr);
     return begin && end && begin <= now && end >= now;
   });
 
   // 같은 공고명+세부사업명은 1건만 유지, 마감일 빠른 순으로 정렬
   const dedupMap = new Map<string, SubsidyNotice>();
   for (const n of openNow) {
-    dedupMap.set(`${n.pblancNm}|${n.dtlbzNm}`, n);
+    dedupMap.set(`${n.pblancNm || n.dtlbzNm}|${n.dtlbzNm}`, n);
   }
   const sorted = Array.from(dedupMap.values()).sort((a, b) => {
-    const aEnd = parseYmd(a.rceptEndDe)!.getTime();
-    const bEnd = parseYmd(b.rceptEndDe)!.getTime();
+    const aEnd = parseYmd(a.rceptEndDe || a.pblancEndDe)!.getTime();
+    const bEnd = parseYmd(b.rceptEndDe || b.pblancEndDe)!.getTime();
     return aEnd - bEnd;
   });
   const top30 = sorted.slice(0, 30);
@@ -147,12 +150,12 @@ function formatPeriod(beginDe: string, endDe: string): string {
 function buildRows(notices: SubsidyNotice[], today: Date): string {
   return notices
     .map((n) => {
-      const end = parseYmd(n.rceptEndDe);
+      const end = parseYmd(n.rceptEndDe || n.pblancEndDe);
       const region = [n.ctprvnNm, n.signguNm].filter(Boolean).join(" ") || "전국";
       return `<tr><td><strong>${n.pblancNm || n.dtlbzNm}</strong><br><small>${n.jrsdNm || "-"} · ${region}</small></td>` +
         `<td>${truncate(n.sportTrgetCn, 60)}</td>` +
         `<td class="num">${formatAmount(n.sportBgamt)}</td>` +
-        `<td>${formatPeriod(n.rceptBeginDe, n.rceptEndDe)}</td>` +
+        `<td>${formatPeriod(n.rceptBeginDe || n.pblancBeginDe, n.rceptEndDe || n.pblancEndDe)}</td>` +
         `<td>${end ? formatDday(end, today) : "-"}</td></tr>`;
     })
     .join("\n");

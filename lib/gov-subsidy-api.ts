@@ -20,6 +20,15 @@ export interface SubsidyNotice {
   bsnsGuidanceUrl: string;
 }
 
+// JSON 응답에 남아있는 XML CDATA 래퍼 제거
+function stripCdata(s: string): string {
+  return s.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").trim();
+}
+
+function str(v: unknown): string {
+  return stripCdata(String(v ?? "").trim());
+}
+
 function normalizeItems(data: unknown): Record<string, unknown>[] {
   const body = (data as { response?: { body?: unknown } })?.response?.body;
   const items = (body as { items?: unknown })?.items;
@@ -52,7 +61,6 @@ export async function fetchSubsidyNotices(bsnsyear: string, apiKey: string): Pro
   const numOfRows = 100;
   const MAX_PAGES = 10;
 
-  // 1페이지로 totalCount 파악
   const firstRes = await fetch(makeUrl(bsnsyear, apiKey, 1, numOfRows));
   if (!firstRes.ok) throw new Error(`Subsidy API ${firstRes.status}`);
   const firstData = await firstRes.json();
@@ -61,7 +69,6 @@ export async function fetchSubsidyNotices(bsnsyear: string, apiKey: string): Pro
   const total = totalCount(firstData);
   const maxPage = Math.min(Math.ceil(total / numOfRows), MAX_PAGES);
 
-  // 2페이지 이후 병렬 요청
   const rest = maxPage > 1
     ? await Promise.all(
         Array.from({ length: maxPage - 1 }, (_, i) =>
@@ -75,25 +82,28 @@ export async function fetchSubsidyNotices(bsnsyear: string, apiKey: string): Pro
 
   const all = [...firstItems, ...rest.flat()];
 
-  return all.map((item) => ({
-    pblancNm: String(item.PBLANC_NM ?? "").trim(),
-    dtlbzNm: String(item.DTLBZ_NM ?? "").trim(),
-    ddtlbzNm: String(item.DDTLBZ_NM ?? "").trim(),
-    jrsdNm: String(item.JRSD_NM ?? "").trim(),
-    ctprvnNm: String(item.CTPRVN_NM ?? "").trim(),
-    signguNm: String(item.SIGNGU_NM ?? "").trim(),
-    pblancBeginDe: String(item.PBLANC_BEGIN_DE ?? "").trim(),
-    pblancEndDe: String(item.PBLANC_END_DE ?? "").trim(),
-    rceptBeginDe: String(item.RCEPT_BEGIN_DE ?? "").trim(),
-    rceptEndDe: String(item.RCEPT_END_DE ?? "").trim(),
-    rceptPdDc: String(item.RCEPT_PD_DC ?? "").trim(),
-    sportBgamt: String(item.SPORT_BGAMT ?? "").trim(),
-    sportTrgetCn: String(item.SPORT_TRGET_CN ?? "").trim(),
-    exclTrgetCn: String(item.EXCL_TRGET_CN ?? "").trim(),
-    slctnStdrDc: String(item.SLCTN_STDR_DC ?? "").trim(),
-    reqstRceptMthCn: String(item.REQST_RCEPT_MTH_CN ?? "").trim(),
-    bsnsGuidanceUrl: String(item.BSNS_GUIDANCE_URL ?? "").trim(),
-  }));
+  return all
+    .map((item) => ({
+      pblancNm: str(item.PBLANC_NM),
+      dtlbzNm: str(item.DTLBZ_NM),
+      ddtlbzNm: str(item.DDTLBZ_NM),
+      jrsdNm: str(item.JRSD_NM),
+      ctprvnNm: str(item.CTPRVN_NM),
+      signguNm: str(item.SIGNGU_NM),
+      pblancBeginDe: str(item.PBLANC_BEGIN_DE),
+      pblancEndDe: str(item.PBLANC_END_DE),
+      rceptBeginDe: str(item.RCEPT_BEGIN_DE),
+      rceptEndDe: str(item.RCEPT_END_DE),
+      rceptPdDc: str(item.RCEPT_PD_DC),
+      sportBgamt: str(item.SPORT_BGAMT),
+      sportTrgetCn: str(item.SPORT_TRGET_CN),
+      exclTrgetCn: str(item.EXCL_TRGET_CN),
+      slctnStdrDc: str(item.SLCTN_STDR_DC),
+      reqstRceptMthCn: str(item.REQST_RCEPT_MTH_CN),
+      bsnsGuidanceUrl: str(item.BSNS_GUIDANCE_URL),
+    }))
+    // 공모 공고가 있는 레코드만 (PBLANC_NM 또는 RCEPT 날짜 중 하나라도 있는 것)
+    .filter((n) => n.pblancNm || n.rceptEndDe || n.pblancEndDe);
 }
 
 export function parseYmd(s: string): Date | null {
