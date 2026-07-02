@@ -249,7 +249,8 @@ ${buildWolseRows(wolseTop10, year)}
 <p>${year}년 ${month}월 국토교통부에 신고된 ${sido} 아파트 전월세 실거래 중 전세 보증금 최고가와 월세 최고가를 각각 TOP 10으로 정리했습니다.</p>
 ${jeonseSection}
 ${wolseSection}
-<p><small>출처: 국토교통부 아파트 전월세 실거래 상세 자료 | ${year}년 ${month}월 신고 기준</small></p>`;
+<p><small>출처: 국토교통부 아파트 전월세 실거래 상세 자료 | ${year}년 ${month}월 신고 기준</small></p>
+<p>본 자료는 국토교통부 실거래가 공개시스템을 기반으로 매월 1일 자동 업데이트되는 정보입니다. 단순 순위 나열이므로 실제 매물 가격과 차이가 있을 수 있으니, 전월세 계약 전 반드시 해당 지역 특례대출 조건이나 전세보증보험 가입 여부를 먼저 확인하시기 바랍니다.</p>`;
 
   return { title, excerpt, content, metaTitle, metaDescription, tagNames };
 }

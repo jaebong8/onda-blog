@@ -1,0 +1,20 @@
+name: Monthly Loan Rates Cron
+
+on:
+  schedule:
+    - cron: "0 7 1 * *" # 매월 1일 07:00 UTC (16:00 KST)
+  workflow_dispatch:
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call loan-rates cron endpoint
+        run: |
+          status=$(curl -s -o response.json -w "%{http_code}" -X GET "${{ secrets.SITE_URL }}/api/cron/loan-rates?dry=true" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
+          echo "HTTP status: $status"
+          cat response.json
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            exit 1
+          fi
