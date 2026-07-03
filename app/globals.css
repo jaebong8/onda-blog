@@ -128,21 +128,19 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
-/* 글 본문 내 데이터 표 (아파트 매매/전월세 TOP10 등) */
-.prose table {
-  display: block;
+/* 글 본문 내 데이터 표 — overflow는 JS로 div 감싸기 처리 */
+.prose .table-wrapper {
   overflow-x: auto;
-  white-space: nowrap;
-  font-size: 0.875rem;
   -webkit-overflow-scrolling: touch;
   width: 100%;
+  margin: 1.5em 0;
 }
-.prose table thead,
-.prose table tbody,
-.prose table tfoot {
-  display: table;
-  width: 100%;
+.prose table {
+  min-width: 100%;
+  width: max-content;
   border-collapse: collapse;
+  white-space: nowrap;
+  font-size: 0.875rem;
 }
 .prose tbody tr:nth-child(even) {
   background-color: var(--muted);

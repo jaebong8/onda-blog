@@ -236,7 +236,9 @@ export default async function PostPage({ params }: Props) {
                 /#([가-힣a-zA-Z0-9_]+)(?![^<]*?>)/g,
                 (_, tag) =>
                   `<a href="/tags/${encodeURIComponent(tag)}" class="text-primary font-medium hover:underline underline-offset-2">#${tag}</a>`
-              ),
+              )
+              .replace(/<table/gi, '<div class="table-wrapper"><table')
+              .replace(/<\/table>/gi, "</table></div>"),
           }}
           className="mt-8"
         />
