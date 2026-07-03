@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Anthropic from "@anthropic-ai/sdk";
 
 const SYSTEM_PROMPT = `당신은 10년 경력의 부동산·금융 전문 기자입니다.
 데이터를 받으면 독자가 실생활에서 바로 활용할 수 있는 시장 분석 단락을 작성합니다.
@@ -15,23 +15,25 @@ const SYSTEM_PROMPT = `당신은 10년 경력의 부동산·금융 전문 기자
 - 출력: HTML <p> 태그만 사용, 마크다운 없이, 다른 태그 없이`;
 
 export async function generateMarketSummary(prompt: string): Promise<string> {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return "";
 
   try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
-      systemInstruction: SYSTEM_PROMPT,
+    const client = new Anthropic({ apiKey });
+    const message = await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 1024,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: "user", content: prompt }],
     });
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text().trim();
-
-    // p 태그만 허용, 다른 태그 제거
-    return text
-      .replace(/<(?!\/?(p)(?:\s|>))[^>]+>/gi, "")
+    const text = message.content
+      .filter((b) => b.type === "text")
+      .map((b) => (b as { type: "text"; text: string }).text)
+      .join("")
       .trim();
+
+    return text.replace(/<(?!\/?(p)(?:\s|>))[^>]+>/gi, "").trim();
   } catch {
     return "";
   }
