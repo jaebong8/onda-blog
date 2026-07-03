@@ -269,7 +269,7 @@ function buildContent(
 
       // 미달이면 가점 의미 없음, 경쟁률 있는데 가점 없으면 집계중
       const scoreDisplay = (label: string | undefined) => {
-        if (isMidal) return '<span style="color:var(--muted-foreground);font-size:0.75em">잔여</span>';
+        if (isMidal) return '<span style="color:var(--muted-foreground);font-size:0.75em">미달</span>';
         if (!label || label === "0") return '<span style="color:var(--muted-foreground);font-size:0.75em">집계중</span>';
         return label;
       };
