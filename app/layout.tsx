@@ -20,6 +20,9 @@ export const metadata: Metadata = {
   icons: {
     icon: "/favicon.png",
   },
+  other: {
+    "google-adsense-account": "ca-pub-1166748447929300",
+  },
   alternates: {
     types: {
       "application/rss+xml": "/rss.xml",
