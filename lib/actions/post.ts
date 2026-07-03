@@ -49,6 +49,9 @@ export async function createPost(formData: FormData) {
   const thumbnail =
     (formData.get("thumbnail") as string) || extractFirstImage(content) || null;
 
+  const scheduledAtRaw = formData.get("scheduledAt") as string;
+  const scheduledAt = !published && scheduledAtRaw ? new Date(scheduledAtRaw) : null;
+
   const tags = await upsertHashtagTags(content);
 
   await prisma.post.create({
@@ -59,6 +62,7 @@ export async function createPost(formData: FormData) {
       content,
       published,
       publishedAt: published ? new Date() : null,
+      scheduledAt,
       metaTitle,
       metaDescription,
       thumbnail,
@@ -95,6 +99,8 @@ export async function updatePost(id: string, formData: FormData) {
   const categoryId = (formData.get("categoryId") as string) || null;
   const thumbnail =
     (formData.get("thumbnail") as string) || extractFirstImage(content) || null;
+  const scheduledAtRaw = formData.get("scheduledAt") as string;
+  const scheduledAt = !published && scheduledAtRaw ? new Date(scheduledAtRaw) : null;
 
   const [existing, tags] = await Promise.all([
     prisma.post.findUnique({
@@ -120,6 +126,7 @@ export async function updatePost(id: string, formData: FormData) {
         published,
         publishedAt:
           published && !existing?.publishedAt ? new Date() : existing?.publishedAt ?? null,
+        scheduledAt,
         metaTitle,
         metaDescription,
         thumbnail,

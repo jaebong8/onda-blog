@@ -12,6 +12,9 @@ import { ViewCounter } from "@/components/blog/view-counter";
 import { ShareButtons } from "@/components/blog/share-buttons";
 import { PostLikeButton } from "@/components/blog/post-like-button";
 import { CommentSection } from "@/components/blog/comment-section";
+import { TableOfContents } from "@/components/blog/toc";
+import { extractHeadings, injectHeadingIds } from "@/lib/utils/toc";
+import { AdUnit } from "@/components/blog/ad-unit";
 
 export const revalidate = 3600;
 
@@ -123,6 +126,9 @@ export default async function PostPage({ params }: Props) {
       })
     : [];
 
+  const tocHeadings = extractHeadings(post.content);
+  const contentWithIds = injectHeadingIds(post.content, tocHeadings);
+
   const userId = session?.user?.id ?? null;
   const likeCount = likeData.length;
   const userLiked = userId ? likeData.some((l) => l.userId === userId) : false;
@@ -218,9 +224,11 @@ export default async function PostPage({ params }: Props) {
           )}
         </header>
 
+        <TableOfContents headings={tocHeadings} />
+
         <div
           dangerouslySetInnerHTML={{
-            __html: post.content
+            __html: contentWithIds
               .replace(
                 /<img(?![^>]*\balt=["'][^"']+["'])[^>]*(src=["'][^"']+["'])[^>]*>/gi,
                 (match) => match.replace("<img", `<img alt="${post.title}"`)
@@ -234,6 +242,9 @@ export default async function PostPage({ params }: Props) {
           className="mt-8"
         />
       </article>
+
+      {/* 본문 하단 광고 */}
+      <AdUnit slot="XXXXXXXXXX" className="mt-10" />
 
       {/* 좋아요 */}
       <div className="mt-10 flex justify-center">

@@ -12,6 +12,7 @@ type DefaultValues = {
   excerpt: string;
   content: string;
   published: boolean;
+  scheduledAt?: string;
   metaTitle: string;
   metaDescription: string;
   categoryId: string;
@@ -26,6 +27,7 @@ type Props = {
 
 export function PostForm({ action, categories, defaultValues }: Props) {
   const [title, setTitle] = useState(defaultValues?.title ?? "");
+  const [published, setPublished] = useState(defaultValues?.published ?? false);
   const [activeTab, setActiveTab] = useState<"content" | "seo">("content");
   const [thumbnail, setThumbnail] = useState(defaultValues?.thumbnail ?? "");
   const [thumbUploading, setThumbUploading] = useState(false);
@@ -202,13 +204,30 @@ export function PostForm({ action, categories, defaultValues }: Props) {
               <label className="text-sm font-medium">상태</label>
               <select
                 name="published"
-                defaultValue={defaultValues?.published ? "true" : "false"}
+                value={published ? "true" : "false"}
+                onChange={(e) => setPublished(e.target.value === "true")}
                 className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 <option value="false">임시저장</option>
                 <option value="true">발행</option>
               </select>
             </div>
+
+            {!published && (
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">
+                  예약 발행{" "}
+                  <span className="text-muted-foreground font-normal">(선택)</span>
+                </label>
+                <input
+                  type="datetime-local"
+                  name="scheduledAt"
+                  defaultValue={defaultValues?.scheduledAt ?? ""}
+                  className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                <p className="text-xs text-muted-foreground">설정 시 해당 시각에 자동 발행됩니다.</p>
+              </div>
+            )}
 
             <div className="space-y-1.5">
               <label className="text-sm font-medium">카테고리</label>

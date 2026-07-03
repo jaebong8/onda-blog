@@ -1,0 +1,22 @@
+name: Publish Scheduled Posts
+
+on:
+  schedule:
+    - cron: "0 * * * *"   # 매 정각 (UTC)
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger publish-scheduled cron
+        run: |
+          RESPONSE=$(curl -s -o /tmp/body.txt -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.SITE_URL }}/api/cron/publish-scheduled")
+          echo "HTTP $RESPONSE"
+          cat /tmp/body.txt
+          if [ "$RESPONSE" != "200" ]; then
+            echo "::error::Unexpected status $RESPONSE"
+            exit 1
+          fi

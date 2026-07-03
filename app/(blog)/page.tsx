@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const [rawPosts, categories] = await Promise.all([
+  const [rawPosts, categories, popularPosts] = await Promise.all([
     prisma.post.findMany({
       where: { published: true },
       orderBy: { publishedAt: "desc" },
@@ -39,6 +39,12 @@ export default async function HomePage() {
     prisma.category.findMany({
       orderBy: { name: "asc" },
       include: { _count: { select: { posts: { where: { published: true } } } } },
+    }),
+    prisma.post.findMany({
+      where: { published: true, views: { gt: 0 } },
+      orderBy: { views: "desc" },
+      take: 5,
+      select: { slug: true, title: true, views: true, category: { select: { name: true } } },
     }),
   ]);
 
@@ -89,6 +95,34 @@ export default async function HomePage() {
         >
           모든 글 보기 →
         </Link>
+      )}
+
+      {/* 인기글 */}
+      {popularPosts.length > 0 && (
+        <section className="border-t pt-8 space-y-4">
+          <h2 className="text-lg font-bold">인기글</h2>
+          <ol className="space-y-3">
+            {popularPosts.map((post, idx) => (
+              <li key={post.slug} className="flex items-start gap-3">
+                <span className="shrink-0 w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">
+                  {idx + 1}
+                </span>
+                <div className="min-w-0">
+                  <Link
+                    href={`/posts/${encodeURIComponent(post.slug)}`}
+                    className="text-sm font-medium hover:underline underline-offset-4 line-clamp-2"
+                  >
+                    {post.title}
+                  </Link>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {post.category?.name && <span>{post.category.name} · </span>}
+                    조회 {post.views.toLocaleString()}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
       )}
     </div>
     </>

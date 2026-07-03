@@ -31,6 +31,9 @@ export default async function EditPostPage({ params }: Props) {
           excerpt: post.excerpt,
           content: post.content,
           published: post.published,
+          scheduledAt: post.scheduledAt
+            ? post.scheduledAt.toISOString().slice(0, 16)
+            : "",
           metaTitle: post.metaTitle ?? "",
           metaDescription: post.metaDescription ?? "",
           categoryId: post.categoryId ?? "",
