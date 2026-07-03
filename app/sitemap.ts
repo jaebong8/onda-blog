@@ -1,5 +1,6 @@
 import { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
+import { extractCity } from "@/lib/apt-cities";
 
 export const revalidate = 3600;
 
@@ -9,6 +10,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let posts: { slug: string; updatedAt: Date }[] = [];
   let categories: { slug: string }[] = [];
   let tags: { slug: string }[] = [];
+
+  let aptCities: string[] = [];
 
   try {
     [posts, categories, tags] = await Promise.all([
@@ -20,6 +23,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       prisma.category.findMany({ select: { slug: true } }),
       prisma.tag.findMany({ select: { slug: true } }),
     ]);
+
+    const aptPosts = posts.filter((p) => p.slug.startsWith("apt-top10-"));
+    aptCities = [...new Set(aptPosts.map((p) => extractCity(p.slug)).filter(Boolean) as string[])];
   } catch {
     // DB not available during build — return static routes only
   }
@@ -43,6 +49,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }));
 
+  const aptHubEntries: MetadataRoute.Sitemap = [
+    { url: `${siteUrl}/apt`, changeFrequency: "monthly", priority: 0.8 },
+    ...aptCities.map((city) => ({
+      url: `${siteUrl}/apt/${city}`,
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    })),
+  ];
+
   return [
     {
       url: siteUrl,
@@ -54,6 +69,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 0.9,
     },
+    ...aptHubEntries,
     ...postEntries,
     ...categoryEntries,
     ...tagEntries,
