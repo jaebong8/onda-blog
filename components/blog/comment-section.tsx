@@ -190,7 +190,7 @@ function CommentItem({
   }
 
   return (
-    <div className={`flex gap-3 ${isReply ? "ml-10" : ""}`}>
+    <div className="flex gap-3">
       <Avatar user={comment.author} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
@@ -269,21 +269,25 @@ export function CommentSection({ postId, comments, currentUser }: Props) {
       {comments.length > 0 && (
         <div className="space-y-6">
           {comments.map((comment) => (
-            <div key={comment.id} className="space-y-4">
+            <div key={comment.id} className="space-y-3">
               <CommentItem
                 comment={comment}
                 postId={postId}
                 currentUser={currentUser}
               />
-              {comment.replies.map((reply) => (
-                <CommentItem
-                  key={reply.id}
-                  comment={reply}
-                  postId={postId}
-                  currentUser={currentUser}
-                  isReply
-                />
-              ))}
+              {comment.replies.length > 0 && (
+                <div className="ml-6 border-l-2 border-muted pl-4 space-y-3">
+                  {comment.replies.map((reply) => (
+                    <CommentItem
+                      key={reply.id}
+                      comment={reply}
+                      postId={postId}
+                      currentUser={currentUser}
+                      isReply
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
