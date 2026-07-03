@@ -252,15 +252,26 @@ function buildContent(
       const cr = rank1Local.find((r) => r.houseTy === ty);
       const sr = scoreRows.find((r) => r.houseTy === ty);
       const suply = cmpetRows.find((r) => r.houseTy === ty)?.suplyHshldco ?? 0;
+
+      const rateStr = cr ? fmtRate(cr.cmpetRate) : "-";
+      const isMidal = rateStr === "미달" || (cr && cr.reqCnt < suply);
+
+      // 미달이면 가점 의미 없음, 경쟁률 있는데 가점 없으면 집계중
+      const scoreDisplay = (label: string | undefined) => {
+        if (isMidal) return '<span style="color:var(--muted-foreground);font-size:0.75em">미달</span>';
+        if (!label || label === "0") return '<span style="color:var(--muted-foreground);font-size:0.75em">집계중</span>';
+        return label;
+      };
+
       return (
         `<tr>` +
         `<td>${ty}</td>` +
-        `<td class="num">${suply}세대</td>` +
-        `<td class="num">${cr ? (cr.reqCnt).toLocaleString() : "-"}</td>` +
-        `<td class="num">${cr ? fmtRate(cr.cmpetRate) : "-"}</td>` +
-        `<td class="num">${sr?.lwetScore ?? "-"}</td>` +
-        `<td class="num">${sr?.avrgScore ?? "-"}</td>` +
-        `<td class="num">${sr?.topScore ?? "-"}</td>` +
+        `<td class="num">${suply.toLocaleString()}세대</td>` +
+        `<td class="num">${cr ? cr.reqCnt.toLocaleString() : "-"}</td>` +
+        `<td class="num">${rateStr}</td>` +
+        `<td class="num">${scoreDisplay(sr?.lwetScore)}</td>` +
+        `<td class="num">${scoreDisplay(sr?.avrgScore)}</td>` +
+        `<td class="num">${scoreDisplay(sr?.topScore)}</td>` +
         `</tr>`
       );
     }).join("\n");
