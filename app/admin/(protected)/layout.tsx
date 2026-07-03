@@ -44,6 +44,12 @@ export default async function AdminLayout({
             >
               태그
             </Link>
+            <Link
+              href="/admin/comments"
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              댓글
+            </Link>
           </nav>
           <div className="ml-auto flex items-center gap-3 pl-3 border-l">
             <span className="text-sm font-medium">
