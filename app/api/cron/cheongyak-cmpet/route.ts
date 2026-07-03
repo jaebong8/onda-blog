@@ -158,16 +158,18 @@ function buildAiPrompt(valid: ValidEntry[], weekStart: string, weekEnd: string):
     }, 0);
   }, 0);
 
-  const allRates = valid.flatMap(({ cmpetRows }) =>
-    cmpetRows
-      .filter((r) => r.subscrptRankCode === 1 && r.resideSecd === "01")
-      .map((r) => parseFloat(r.cmpetRate) || 0)
-      .filter((n) => n > 0)
+  const rank1LocalRows = valid.flatMap(({ cmpetRows }) =>
+    cmpetRows.filter((r) => r.subscrptRankCode === 1 && r.resideSecd === "01")
   );
+  const midalCount = rank1LocalRows.filter((r) =>
+    r.cmpetRate.includes("△") || r.cmpetRate.startsWith("(") || parseFloat(r.cmpetRate) === 0
+  ).length;
+  const allRates = rank1LocalRows
+    .map((r) => parseFloat(r.cmpetRate))
+    .filter((n) => !isNaN(n) && n > 0);
   const avgRate = allRates.length ? allRates.reduce((a, b) => a + b, 0) / allRates.length : 0;
   const maxRate = allRates.length ? Math.max(...allRates) : 0;
   const over10 = allRates.filter((n) => n >= 10).length;
-  const under1 = allRates.filter((n) => n < 1).length;
 
   const allScores = valid.flatMap(({ scoreRows }) =>
     scoreRows.map((r) => Number(r.avrgScore) || 0).filter((n) => n > 0)
@@ -195,7 +197,7 @@ function buildAiPrompt(valid: ValidEntry[], weekStart: string, weekEnd: string):
       const cr = rank1Local.find((r) => r.houseTy === ty);
       const sr = scoreRows.find((r) => r.houseTy === ty);
       const parts = [`${ty}형`];
-      if (cr) parts.push(`경쟁률 ${parseFloat(cr.cmpetRate).toFixed(1)}:1 (접수 ${cr.reqCnt.toLocaleString()}건)`);
+      if (cr) parts.push(`경쟁률 ${fmtRate(cr.cmpetRate)} (접수 ${cr.reqCnt.toLocaleString()}건)`);
       if (sr?.avrgScore) parts.push(`평균가점 ${sr.avrgScore}점`);
       if (sr?.topScore) parts.push(`최고가점 ${sr.topScore}점`);
       return parts.join(" / ");
@@ -209,7 +211,7 @@ function buildAiPrompt(valid: ValidEntry[], weekStart: string, weekEnd: string):
 - 마감 단지: ${valid.length}개 / 총 공급: ${totalUnits.toLocaleString()}세대
 - 지역 분포: ${regionSummary}
 - 1순위 해당지역 평균경쟁률: ${avgRate.toFixed(1)}:1 / 최고경쟁률: ${maxRate.toFixed(1)}:1
-- 10:1 초과 단지: ${over10}개 / 미달(1:1 미만) 단지: ${under1}개
+- 10:1 초과 단지: ${over10}개 / 미달 단지: ${midalCount}개
 - 당첨가점 평균: ${avgScore.toFixed(1)}점 / 최고가점: ${highestScore}점
 
 ## 단지별 상세
@@ -230,11 +232,11 @@ function toPyeong(houseTy: string): number {
 function fmtRate(rate: string): string {
   if (!rate) return "-";
   const delta = rate.match(/△(\d+)/);
-  if (delta) return `미달 (${delta[1]}세대)`;
-  if (rate.includes("△") || rate.startsWith("(")) return "미달";
+  if (delta) return `잔여 (${delta[1]}세대)`;
+  if (rate.includes("△") || rate.startsWith("(")) return "잔여";
   const n = parseFloat(rate);
-  if (isNaN(n)) return "미달";
-  return n === 0 ? "미달" : `${n.toFixed(1)}:1`;
+  if (isNaN(n)) return "잔여";
+  return n === 0 ? "잔여" : `${n.toFixed(1)}:1`;
 }
 
 function buildContent(
@@ -263,11 +265,11 @@ function buildContent(
       const suply = cmpetRows.find((r) => r.houseTy === ty)?.suplyHshldco ?? 0;
 
       const rateStr = cr ? fmtRate(cr.cmpetRate) : "-";
-      const isMidal = rateStr.startsWith("미달") || (cr && cr.reqCnt < suply);
+      const isMidal = rateStr.startsWith("잔여") || (cr && cr.reqCnt < suply);
 
       // 미달이면 가점 의미 없음, 경쟁률 있는데 가점 없으면 집계중
       const scoreDisplay = (label: string | undefined) => {
-        if (isMidal) return '<span style="color:var(--muted-foreground);font-size:0.75em">미달</span>';
+        if (isMidal) return '<span style="color:var(--muted-foreground);font-size:0.75em">잔여</span>';
         if (!label || label === "0") return '<span style="color:var(--muted-foreground);font-size:0.75em">집계중</span>';
         return label;
       };
