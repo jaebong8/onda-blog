@@ -222,9 +222,18 @@ ${details}
 - 실수요자·투자자가 이번 결과에서 읽어야 할 시사점`;
 }
 
+function toPyeong(houseTy: string): number {
+  const sqm = parseFloat(houseTy);
+  return isNaN(sqm) ? 0 : Math.round(sqm / 3.3058);
+}
+
 function fmtRate(rate: string): string {
+  if (!rate) return "-";
+  const delta = rate.match(/△(\d+)/);
+  if (delta) return `미달 (${delta[1]}세대)`;
+  if (rate.includes("△") || rate.startsWith("(")) return "미달";
   const n = parseFloat(rate);
-  if (isNaN(n)) return rate || "-";
+  if (isNaN(n)) return "미달";
   return n === 0 ? "미달" : `${n.toFixed(1)}:1`;
 }
 
@@ -254,7 +263,7 @@ function buildContent(
       const suply = cmpetRows.find((r) => r.houseTy === ty)?.suplyHshldco ?? 0;
 
       const rateStr = cr ? fmtRate(cr.cmpetRate) : "-";
-      const isMidal = rateStr === "미달" || (cr && cr.reqCnt < suply);
+      const isMidal = rateStr.startsWith("미달") || (cr && cr.reqCnt < suply);
 
       // 미달이면 가점 의미 없음, 경쟁률 있는데 가점 없으면 집계중
       const scoreDisplay = (label: string | undefined) => {
@@ -265,10 +274,10 @@ function buildContent(
 
       return (
         `<tr>` +
-        `<td>${ty}</td>` +
+        `<td>${ty} <small style="color:var(--muted-foreground)">(${toPyeong(ty)}평)</small></td>` +
         `<td class="num">${suply.toLocaleString()}세대</td>` +
         `<td class="num">${cr ? cr.reqCnt.toLocaleString() : "-"}</td>` +
-        `<td class="num">${rateStr}</td>` +
+        `<td class="num">${isMidal ? `<span style="color:#ef4444;font-weight:600">${rateStr}</span>` : rateStr}</td>` +
         `<td class="num">${scoreDisplay(sr?.lwetScore)}</td>` +
         `<td class="num">${scoreDisplay(sr?.avrgScore)}</td>` +
         `<td class="num">${scoreDisplay(sr?.topScore)}</td>` +
