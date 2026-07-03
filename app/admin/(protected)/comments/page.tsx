@@ -12,11 +12,12 @@ export default async function AdminCommentsPage({
 }) {
   const { page: pageParam } = await searchParams;
   const page = Math.max(1, Number(pageParam ?? 1));
-  const PAGE_SIZE = 20;
+  const PAGE_SIZE = 15;
 
   const [total, comments] = await Promise.all([
-    prisma.comment.count(),
+    prisma.comment.count({ where: { parentId: null } }),
     prisma.comment.findMany({
+      where: { parentId: null },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
@@ -24,10 +25,19 @@ export default async function AdminCommentsPage({
         id: true,
         content: true,
         createdAt: true,
-        parentId: true,
         author: { select: { name: true, email: true } },
         post: { select: { id: true, title: true, slug: true } },
         _count: { select: { likes: true, replies: true } },
+        replies: {
+          orderBy: { createdAt: "asc" },
+          select: {
+            id: true,
+            content: true,
+            createdAt: true,
+            author: { select: { name: true, email: true } },
+            _count: { select: { likes: true } },
+          },
+        },
       },
     }),
   ]);
@@ -38,29 +48,24 @@ export default async function AdminCommentsPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">댓글 관리</h1>
-        <span className="text-sm text-muted-foreground">총 {total.toLocaleString()}개</span>
+        <span className="text-sm text-muted-foreground">총 {total.toLocaleString()}개 (최상위)</span>
       </div>
 
       <div className="border rounded-lg divide-y">
         {comments.length === 0 ? (
           <p className="px-4 py-10 text-center text-sm text-muted-foreground">댓글이 없습니다.</p>
         ) : comments.map((c) => (
-          <div key={c.id} className="px-4 py-4">
+          <div key={c.id} className="px-4 py-4 space-y-3">
+            {/* 최상위 댓글 */}
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  {c.parentId && (
-                    <span className="text-xs bg-muted px-1.5 py-0.5 rounded">답글</span>
-                  )}
                   <span className="text-sm font-medium">{c.author.name}</span>
                   <span className="text-xs text-muted-foreground">{c.author.email}</span>
                   <span className="text-xs text-muted-foreground">
                     {c.createdAt.toLocaleString("ko-KR", { dateStyle: "short", timeStyle: "short" })}
                   </span>
                   <span className="text-xs text-muted-foreground">❤ {c._count.likes}</span>
-                  {c._count.replies > 0 && (
-                    <span className="text-xs text-muted-foreground">💬 답글 {c._count.replies}</span>
-                  )}
                 </div>
                 <p className="text-sm whitespace-pre-wrap wrap-break-word">{c.content}</p>
                 <Link
@@ -73,10 +78,34 @@ export default async function AdminCommentsPage({
               </div>
               <DeleteCommentButton id={c.id} />
             </div>
-            {/* 답글은 최상위 댓글(parentId 없음)에만 달 수 있음 */}
-            {!c.parentId && (
-              <ReplyForm parentId={c.id} postId={c.post.id} />
+
+            {/* 답글 목록 */}
+            {c.replies.length > 0 && (
+              <div className="ml-4 border-l-2 border-muted pl-4 space-y-3">
+                {c.replies.map((r) => (
+                  <div key={r.id} className="flex items-start justify-between gap-4">
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">답글</span>
+                        <span className="text-sm font-medium">{r.author.name}</span>
+                        <span className="text-xs text-muted-foreground">{r.author.email}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {r.createdAt.toLocaleString("ko-KR", { dateStyle: "short", timeStyle: "short" })}
+                        </span>
+                        <span className="text-xs text-muted-foreground">❤ {r._count.likes}</span>
+                      </div>
+                      <p className="text-sm whitespace-pre-wrap wrap-break-word">{r.content}</p>
+                    </div>
+                    <DeleteCommentButton id={r.id} />
+                  </div>
+                ))}
+              </div>
             )}
+
+            {/* 답글 작성 */}
+            <div className="ml-4">
+              <ReplyForm parentId={c.id} postId={c.post.id} />
+            </div>
           </div>
         ))}
       </div>
