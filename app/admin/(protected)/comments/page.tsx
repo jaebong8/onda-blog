@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { DeleteCommentButton } from "./delete-button";
+import { ReplyForm } from "./reply-form";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,7 @@ export default async function AdminCommentsPage({
         createdAt: true,
         parentId: true,
         author: { select: { name: true, email: true } },
-        post: { select: { title: true, slug: true } },
+        post: { select: { id: true, title: true, slug: true } },
         _count: { select: { likes: true, replies: true } },
       },
     }),
@@ -72,6 +73,10 @@ export default async function AdminCommentsPage({
               </div>
               <DeleteCommentButton id={c.id} />
             </div>
+            {/* 답글은 최상위 댓글(parentId 없음)에만 달 수 있음 */}
+            {!c.parentId && (
+              <ReplyForm parentId={c.id} postId={c.post.id} />
+            )}
           </div>
         ))}
       </div>
