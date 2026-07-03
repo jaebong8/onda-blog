@@ -27,11 +27,14 @@ export async function generateMarketSummary(prompt: string): Promise<string> {
       messages: [{ role: "user", content: prompt }],
     });
 
-    const text = message.content
+    const raw = message.content
       .filter((b) => b.type === "text")
       .map((b) => (b as { type: "text"; text: string }).text)
       .join("")
       .trim();
+
+    // 마크다운 코드블록 제거 (```html ... ``` 또는 ``` ... ```)
+    const text = raw.replace(/^```[\w]*\n?/gm, "").replace(/^```$/gm, "").trim();
 
     return text.replace(/<(?!\/?(p)(?:\s|>))[^>]+>/gi, "").trim();
   } catch {

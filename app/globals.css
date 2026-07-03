@@ -135,6 +135,14 @@
   white-space: nowrap;
   font-size: 0.875rem;
   -webkit-overflow-scrolling: touch;
+  width: 100%;
+}
+.prose table thead,
+.prose table tbody,
+.prose table tfoot {
+  display: table;
+  width: 100%;
+  border-collapse: collapse;
 }
 .prose tbody tr:nth-child(even) {
   background-color: var(--muted);
