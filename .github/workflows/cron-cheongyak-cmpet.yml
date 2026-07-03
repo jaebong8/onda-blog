@@ -1,0 +1,22 @@
+name: Weekly Cheongyak Competition Rate
+
+on:
+  schedule:
+    - cron: "0 2 * * 2"   # 화요일 02:00 UTC = 11:00 KST (지난주 마감분 집계 후)
+  workflow_dispatch:
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger cheongyak-cmpet cron
+        run: |
+          RESPONSE=$(curl -s -o /tmp/body.txt -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.SITE_URL }}/api/cron/cheongyak-cmpet")
+          echo "HTTP $RESPONSE"
+          cat /tmp/body.txt
+          if [ "$RESPONSE" != "200" ]; then
+            echo "::error::Unexpected status $RESPONSE"
+            exit 1
+          fi
