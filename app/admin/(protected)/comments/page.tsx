@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
 import Link from "next/link";
+import { DeleteCommentButton } from "./delete-button";
 
 export const dynamic = "force-dynamic";
 
@@ -25,22 +25,13 @@ export default async function AdminCommentsPage({
         createdAt: true,
         parentId: true,
         author: { select: { name: true, email: true } },
-        post: { select: { id: true, title: true, slug: true } },
+        post: { select: { title: true, slug: true } },
         _count: { select: { likes: true, replies: true } },
       },
     }),
   ]);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
-
-  async function deleteComment(formData: FormData) {
-    "use server";
-    const id = formData.get("id") as string;
-    // 답글(자식) 먼저 삭제 (onDelete: NoAction이라 cascade 안 됨)
-    await prisma.comment.deleteMany({ where: { parentId: id } });
-    await prisma.comment.delete({ where: { id } });
-    revalidatePath("/admin/comments");
-  }
 
   return (
     <div className="space-y-6">
@@ -53,7 +44,7 @@ export default async function AdminCommentsPage({
         {comments.length === 0 ? (
           <p className="px-4 py-10 text-center text-sm text-muted-foreground">댓글이 없습니다.</p>
         ) : comments.map((c) => (
-          <div key={c.id} className="px-4 py-4 space-y-2">
+          <div key={c.id} className="px-4 py-4">
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -79,24 +70,12 @@ export default async function AdminCommentsPage({
                   ↳ {c.post.title}
                 </Link>
               </div>
-              <form action={deleteComment} className="shrink-0">
-                <input type="hidden" name="id" value={c.id} />
-                <button
-                  type="submit"
-                  className="text-xs text-destructive hover:underline"
-                  onClick={(e) => {
-                    if (!confirm("댓글을 삭제할까요? 답글도 함께 삭제됩니다.")) e.preventDefault();
-                  }}
-                >
-                  삭제
-                </button>
-              </form>
+              <DeleteCommentButton id={c.id} />
             </div>
           </div>
         ))}
       </div>
 
-      {/* 페이지네이션 */}
       {totalPages > 1 && (
         <div className="flex justify-center gap-2">
           {page > 1 && (
