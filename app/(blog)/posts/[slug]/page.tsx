@@ -14,6 +14,7 @@ import { PostLikeButton } from "@/components/blog/post-like-button";
 import { CommentSection } from "@/components/blog/comment-section";
 import { TableOfContents } from "@/components/blog/toc";
 import { extractHeadings, injectHeadingIds } from "@/lib/utils/toc";
+import { CITY_NAMES, extractCity } from "@/lib/apt-cities";
 
 export const revalidate = 3600;
 
@@ -149,6 +150,9 @@ export default async function PostPage({ params }: Props) {
     })),
   }));
 
+  const aptCity = extractCity(decodedSlug);
+  const aptCityName = aptCity ? CITY_NAMES[aptCity] : null;
+
   const canonicalUrl = `${siteUrl}/posts/${slug}`;
   const siteName = process.env.NEXT_PUBLIC_SITE_NAME ?? "My Blog";
 
@@ -243,6 +247,22 @@ export default async function PostPage({ params }: Props) {
           className="mt-8"
         />
       </article>
+
+      {/* 도시별 허브 링크 */}
+      {aptCity && aptCityName && (
+        <div className="mt-10 rounded-lg border bg-muted/40 px-5 py-4 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium">{aptCityName} 아파트 데이터 월별 모아보기</p>
+            <p className="text-xs text-muted-foreground mt-0.5">매매 실거래가 · 전월세 TOP10 전체 목록</p>
+          </div>
+          <Link
+            href={`/apt/${aptCity}`}
+            className="shrink-0 text-sm font-medium text-primary hover:underline underline-offset-4"
+          >
+            {aptCityName} 모음 →
+          </Link>
+        </div>
+      )}
 
       {/* 좋아요 */}
       <div className="mt-10 flex justify-center">

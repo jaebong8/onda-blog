@@ -20,6 +20,12 @@ export function Header() {
 
         <nav className="flex items-center gap-3 text-sm ml-auto">
           <Link
+            href="/apt"
+            className="text-muted-foreground transition-colors hover:text-foreground"
+          >
+            아파트
+          </Link>
+          <Link
             href="/posts"
             className="text-muted-foreground transition-colors hover:text-foreground"
           >
