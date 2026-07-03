@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { fetchMortgageRateTop10, fetchRentLoanRateTop10, LoanProduct } from "@/lib/finlife-api";
 import { generateSlug } from "@/lib/utils/slug";
+import { generateMarketSummary } from "@/lib/ai-summary";
 
 export const maxDuration = 300;
 
@@ -47,17 +48,29 @@ export async function GET(request: Request) {
   const results = [];
 
   if (mortgageTop10.length > 0) {
+    const mortgagePromptRows = mortgageTop10.slice(0, 5)
+      .map((p, i) => `${i + 1}위: ${p.korCoNm} (${p.finPrdtNm}) 최저금리 ${p.lendRateMin.toFixed(2)}% · 최고금리 ${p.lendRateMax.toFixed(2)}%`)
+      .join("\n");
+    const mortgageSummary = await generateMarketSummary(
+      `${dealYmd.slice(0, 4)}년 ${dealYmd.slice(4, 6)}월 은행별 주택담보대출 최저금리 상위 5개:\n${mortgagePromptRows}\n\n위 데이터를 바탕으로 이달 주담대 금리 시장 흐름과 대출자 입장에서 주의할 점을 분석해주세요.`
+    );
     results.push(await upsertPost({
       dealYmd, admin, category,
-      ...buildMortgagePost(dealYmd, mortgageTop10),
+      ...buildMortgagePost(dealYmd, mortgageTop10, mortgageSummary),
       slug: `mortgage-rate-top10-${dealYmd}`,
     }));
   }
 
   if (rentTop10.length > 0) {
+    const rentPromptRows = rentTop10.slice(0, 5)
+      .map((p, i) => `${i + 1}위: ${p.korCoNm} (${p.finPrdtNm}) 최저금리 ${p.lendRateMin.toFixed(2)}% · 최고금리 ${p.lendRateMax.toFixed(2)}%`)
+      .join("\n");
+    const rentSummary = await generateMarketSummary(
+      `${dealYmd.slice(0, 4)}년 ${dealYmd.slice(4, 6)}월 은행별 전세자금대출 최저금리 상위 5개:\n${rentPromptRows}\n\n위 데이터를 바탕으로 이달 전세대출 금리 흐름과 전세 임차인 입장에서 주의할 점을 분석해주세요.`
+    );
     results.push(await upsertPost({
       dealYmd, admin, category,
-      ...buildRentPost(dealYmd, rentTop10),
+      ...buildRentPost(dealYmd, rentTop10, rentSummary),
       slug: `rent-loan-rate-top10-${dealYmd}`,
     }));
   }
@@ -116,7 +129,7 @@ function buildRows(products: LoanProduct[]): string {
     .join("\n");
 }
 
-function buildMortgagePost(dealYmd: string, products: LoanProduct[]) {
+function buildMortgagePost(dealYmd: string, products: LoanProduct[], aiSummary = "") {
   const year = dealYmd.slice(0, 4);
   const month = dealYmd.slice(4, 6);
   const dclsMonth = products[0]?.dclsMonth ?? dealYmd;
@@ -128,6 +141,8 @@ function buildMortgagePost(dealYmd: string, products: LoanProduct[]) {
   const metaDescription = `${year}년 ${month}월 은행별 주택담보대출 최저·최고·평균 금리 비교. 금융감독원 금융상품통합비교공시 기준으로 최저금리 은행부터 순위별로 정리했습니다.`;
   const tagNames = ["주택담보대출", "금리비교", "대출금리", `${year}년 ${month}월 대출금리`];
 
+  const summarySection = aiSummary ? `\n<h3>이달의 금리 분석</h3>\n${aiSummary}` : "";
+
   const content = `<h2>${year}년 ${month}월 주택담보대출 금리 비교</h2>
 <p>금융감독원 금융상품통합비교공시(${dclsMonth.slice(0, 4)}년 ${dclsMonth.slice(4, 6)}월 공시) 기준 은행권 주택담보대출 상품 중 은행별 최저금리 상품을 추려 비교했습니다.</p>
 <table>
@@ -138,13 +153,13 @@ function buildMortgagePost(dealYmd: string, products: LoanProduct[]) {
 ${buildRows(products)}
 </tbody>
 </table>
-<p><small>출처: 금융감독원 금융상품통합비교공시 | ${dclsMonth.slice(0, 4)}년 ${dclsMonth.slice(4, 6)}월 공시 기준 · 은행별 최저금리 상품 1개 기준</small></p>
+<p><small>출처: 금융감독원 금융상품통합비교공시 | ${dclsMonth.slice(0, 4)}년 ${dclsMonth.slice(4, 6)}월 공시 기준 · 은행별 최저금리 상품 1개 기준</small></p>${summarySection}
 <p>위 금리는 공시 기준이며 실제 적용 금리는 개인 신용도, 담보 가치, 우대 조건에 따라 달라질 수 있습니다. 정확한 한도와 금리는 각 은행에서 직접 확인하시기 바랍니다.</p>`;
 
   return { title, excerpt, content, metaTitle, metaDescription, tagNames };
 }
 
-function buildRentPost(dealYmd: string, products: LoanProduct[]) {
+function buildRentPost(dealYmd: string, products: LoanProduct[], aiSummary = "") {
   const year = dealYmd.slice(0, 4);
   const month = dealYmd.slice(4, 6);
   const dclsMonth = products[0]?.dclsMonth ?? dealYmd;
@@ -156,6 +171,8 @@ function buildRentPost(dealYmd: string, products: LoanProduct[]) {
   const metaDescription = `${year}년 ${month}월 은행별 전세자금대출 최저·최고·평균 금리 비교. 금융감독원 금융상품통합비교공시 기준으로 최저금리 은행부터 순위별로 정리했습니다.`;
   const tagNames = ["전세자금대출", "금리비교", "전세대출금리", `${year}년 ${month}월 대출금리`];
 
+  const summarySection = aiSummary ? `\n<h3>이달의 금리 분석</h3>\n${aiSummary}` : "";
+
   const content = `<h2>${year}년 ${month}월 전세자금대출 금리 비교</h2>
 <p>금융감독원 금융상품통합비교공시(${dclsMonth.slice(0, 4)}년 ${dclsMonth.slice(4, 6)}월 공시) 기준 은행권 전세자금대출 상품 중 은행별 최저금리 상품을 추려 비교했습니다.</p>
 <table>
@@ -166,7 +183,7 @@ function buildRentPost(dealYmd: string, products: LoanProduct[]) {
 ${buildRows(products)}
 </tbody>
 </table>
-<p><small>출처: 금융감독원 금융상품통합비교공시 | ${dclsMonth.slice(0, 4)}년 ${dclsMonth.slice(4, 6)}월 공시 기준 · 은행별 최저금리 상품 1개 기준</small></p>
+<p><small>출처: 금융감독원 금융상품통합비교공시 | ${dclsMonth.slice(0, 4)}년 ${dclsMonth.slice(4, 6)}월 공시 기준 · 은행별 최저금리 상품 1개 기준</small></p>${summarySection}
 <p>위 금리는 공시 기준이며 실제 적용 금리는 개인 신용도, 보증 조건, 우대 혜택에 따라 달라질 수 있습니다. 정확한 한도와 금리는 각 은행에서 직접 확인하시기 바랍니다.</p>`;
 
   return { title, excerpt, content, metaTitle, metaDescription, tagNames };

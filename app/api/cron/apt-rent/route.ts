@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { fetchSiGunGuCodes, fetchAptRentDeals, AptRentDeal } from "@/lib/apt-trade-api";
 import { generateSlug } from "@/lib/utils/slug";
 import { SIDO_LIST, SIDO_SLUG } from "@/lib/apt-regions";
+import { generateMarketSummary } from "@/lib/ai-summary";
 
 export const maxDuration = 300;
 
@@ -73,7 +74,19 @@ export async function GET(request: Request) {
         continue;
       }
 
-      const { title, excerpt, content, metaTitle, metaDescription, tagNames } = buildPost(sido, dealYmd, jeonseTop10, wolseTop10);
+      const year = dealYmd.slice(0, 4);
+      const month = dealYmd.slice(4, 6);
+      const jeonseRows = jeonseTop10.slice(0, 3)
+        .map((d, i) => `전세 ${i + 1}위: ${d.aptNm} 보증금 ${d.deposit.toLocaleString()}만원 · ${d.excluUseAr}㎡`)
+        .join("\n");
+      const wolseRows = wolseTop10.slice(0, 3)
+        .map((d, i) => `월세 ${i + 1}위: ${d.aptNm} 보증금 ${d.deposit.toLocaleString()}만원/월세 ${d.monthlyRent.toLocaleString()}만원 · ${d.excluUseAr}㎡`)
+        .join("\n");
+      const aiSummary = await generateMarketSummary(
+        `${year}년 ${month}월 ${sido} 아파트 전월세 실거래 현황:\n${jeonseRows}\n${wolseRows}\n\n위 데이터를 바탕으로 이달 ${sido} 아파트 전월세 시장 흐름을 분석해주세요.`
+      );
+
+      const { title, excerpt, content, metaTitle, metaDescription, tagNames } = buildPost(sido, dealYmd, jeonseTop10, wolseTop10, aiSummary);
       const slug = `apt-rent-top10-${SIDO_SLUG[sido] ?? sido}-${dealYmd}`;
 
       const tags = await Promise.all(
@@ -211,7 +224,7 @@ function buildWolseRows(deals: AptRentDeal[], year: string): string {
     .join("\n");
 }
 
-function buildPost(sido: string, dealYmd: string, jeonseTop10: AptRentDeal[], wolseTop10: AptRentDeal[]) {
+function buildPost(sido: string, dealYmd: string, jeonseTop10: AptRentDeal[], wolseTop10: AptRentDeal[], aiSummary = "") {
   const year = dealYmd.slice(0, 4);
   const month = dealYmd.slice(4, 6);
 
@@ -245,11 +258,13 @@ ${buildWolseRows(wolseTop10, year)}
 </table>`
     : `<h3>월세 TOP 10</h3><p>${year}년 ${month}월 신고된 월세 거래가 없습니다.</p>`;
 
+  const summarySection = aiSummary ? `\n<h3>이달의 시장 분석</h3>\n${aiSummary}` : "";
+
   const content = `<h2>${year}년 ${month}월 ${sido} 아파트 전월세 실거래가 TOP 10</h2>
 <p>${year}년 ${month}월 국토교통부에 신고된 ${sido} 아파트 전월세 실거래 중 전세 보증금 최고가와 월세 최고가를 각각 TOP 10으로 정리했습니다.</p>
 ${jeonseSection}
 ${wolseSection}
-<p><small>출처: 국토교통부 아파트 전월세 실거래 상세 자료 | ${year}년 ${month}월 신고 기준</small></p>
+<p><small>출처: 국토교통부 아파트 전월세 실거래 상세 자료 | ${year}년 ${month}월 신고 기준</small></p>${summarySection}
 <p>본 자료는 국토교통부 실거래가 공개시스템을 기반으로 매월 1일 자동 업데이트되는 정보입니다. 단순 순위 나열이므로 실제 매물 가격과 차이가 있을 수 있으니, 전월세 계약 전 반드시 해당 지역 특례대출 조건이나 전세보증보험 가입 여부를 먼저 확인하시기 바랍니다.</p>`;
 
   return { title, excerpt, content, metaTitle, metaDescription, tagNames };
