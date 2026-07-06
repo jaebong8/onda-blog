@@ -50,6 +50,22 @@ function calcMortgage(principal: number, annualRate: number, years: number, type
   };
 }
 
+function getMonthlySchedule(principal: number, annualRate: number, years: number) {
+  const r = annualRate / 100 / 12;
+  if (r === 0 || principal <= 0) return [];
+  const months = years * 12;
+  const monthly = principal * r * Math.pow(1 + r, months) / (Math.pow(1 + r, months) - 1);
+  let remaining = principal;
+  const rows = [];
+  for (let m = 1; m <= months; m++) {
+    const interest = remaining * r;
+    const pmt = monthly - interest;
+    remaining = Math.max(0, remaining - pmt);
+    rows.push({ month: m, principal: pmt, interest, remaining });
+  }
+  return rows;
+}
+
 function getAnnualSchedule(principal: number, annualRate: number, years: number) {
   const r = annualRate / 100 / 12;
   if (r === 0 || principal <= 0) return [];
@@ -76,6 +92,7 @@ export function MortgageCalc() {
   const [annualRate, setAnnualRate] = useState("");
   const [years, setYears] = useState("30");
   const [repayType, setRepayType] = useState<RepayType>("equal-pi");
+  const [scheduleView, setScheduleView] = useState<"annual" | "monthly">("annual");
 
   const p = Number(principal) || 0;
   const r = Number(annualRate) || 0;
@@ -83,6 +100,7 @@ export function MortgageCalc() {
 
   const result = p > 0 && r > 0 ? calcMortgage(p, r, y, repayType) : null;
   const schedule = repayType === "equal-pi" && p > 0 && r > 0 ? getAnnualSchedule(p, r, y) : [];
+  const monthlySchedule = repayType === "equal-pi" && p > 0 && r > 0 ? getMonthlySchedule(p, r, y) : [];
 
   const inputClass = "w-full rounded-md border bg-background px-3 py-2 text-sm";
 
@@ -186,29 +204,51 @@ export function MortgageCalc() {
             </div>
           </div>
 
-          {/* 원리금균등 연도별 표 */}
+          {/* 원리금균등 상환 스케줄 */}
           {repayType === "equal-pi" && schedule.length > 0 && (
             <div className="rounded-lg border overflow-hidden">
-              <div className="px-4 py-3 bg-muted/50 text-sm font-medium">연도별 상환 현황</div>
-              <div className="overflow-x-auto">
+              <div className="px-4 py-3 bg-muted/50 flex items-center justify-between">
+                <span className="text-sm font-medium">상환 스케줄</span>
+                <div className="flex rounded-md border overflow-hidden text-xs">
+                  <button
+                    onClick={() => setScheduleView("annual")}
+                    className={`px-3 py-1.5 transition-colors ${scheduleView === "annual" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+                  >연도별</button>
+                  <button
+                    onClick={() => setScheduleView("monthly")}
+                    className={`px-3 py-1.5 border-l transition-colors ${scheduleView === "monthly" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+                  >월별</button>
+                </div>
+              </div>
+              <div className={`overflow-x-auto ${scheduleView === "monthly" ? "max-h-96 overflow-y-auto" : ""}`}>
                 <table className="w-full text-sm">
-                  <thead>
+                  <thead className="sticky top-0 bg-background z-10">
                     <tr className="border-b text-muted-foreground text-xs">
-                      <th className="text-left px-4 py-2">연도</th>
+                      <th className="text-left px-4 py-2">{scheduleView === "annual" ? "연도" : "납입 회차"}</th>
                       <th className="text-right px-4 py-2">원금</th>
                       <th className="text-right px-4 py-2">이자</th>
                       <th className="text-right px-4 py-2">잔여 원금</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {schedule.map((row) => (
-                      <tr key={row.year} className="border-b last:border-0 hover:bg-muted/30">
-                        <td className="px-4 py-2">{row.year}년차</td>
-                        <td className="text-right px-4 py-2">{fmtWon(Math.round(row.principal))}</td>
-                        <td className="text-right px-4 py-2 text-muted-foreground">{fmtWon(Math.round(row.interest))}</td>
-                        <td className="text-right px-4 py-2">{fmtWon(Math.round(row.remaining))}</td>
-                      </tr>
-                    ))}
+                    {scheduleView === "annual"
+                      ? schedule.map((row) => (
+                          <tr key={row.year} className="border-b last:border-0 hover:bg-muted/30">
+                            <td className="px-4 py-2">{row.year}년차</td>
+                            <td className="text-right px-4 py-2">{fmtWon(Math.round(row.principal))}</td>
+                            <td className="text-right px-4 py-2 text-muted-foreground">{fmtWon(Math.round(row.interest))}</td>
+                            <td className="text-right px-4 py-2">{fmtWon(Math.round(row.remaining))}</td>
+                          </tr>
+                        ))
+                      : monthlySchedule.map((row) => (
+                          <tr key={row.month} className="border-b last:border-0 hover:bg-muted/30">
+                            <td className="px-4 py-2">{row.month}회차</td>
+                            <td className="text-right px-4 py-2">{fmtWon(Math.round(row.principal))}</td>
+                            <td className="text-right px-4 py-2 text-muted-foreground">{fmtWon(Math.round(row.interest))}</td>
+                            <td className="text-right px-4 py-2">{fmtWon(Math.round(row.remaining))}</td>
+                          </tr>
+                        ))
+                    }
                   </tbody>
                 </table>
               </div>

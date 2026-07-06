@@ -55,7 +55,7 @@ export default async function CheongyakCalcPage() {
   let recentPosts: { slug: string; title: string; publishedAt: Date | null }[] = [];
   try {
     recentPosts = await prisma.post.findMany({
-      where: { published: true, slug: { startsWith: "apt-top10-" } },
+      where: { published: true, slug: { startsWith: "cheongyak" } },
       orderBy: { publishedAt: "desc" },
       take: 4,
       select: { slug: true, title: true, publishedAt: true },
@@ -101,7 +101,7 @@ export default async function CheongyakCalcPage() {
 
       {recentPosts.length > 0 && (
         <section className="border-t pt-8 space-y-4">
-          <h2 className="text-lg font-semibold">최신 청약 경쟁률 결과</h2>
+          <h2 className="text-lg font-semibold">최신 청약 정보</h2>
           <ul className="divide-y border rounded-lg overflow-hidden">
             {recentPosts.map((p) => (
               <li key={p.slug}>

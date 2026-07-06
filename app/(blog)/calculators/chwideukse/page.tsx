@@ -55,7 +55,7 @@ export default async function ChwideukseCalcPage() {
   let recentPosts: { slug: string; title: string; publishedAt: Date | null }[] = [];
   try {
     recentPosts = await prisma.post.findMany({
-      where: { published: true, slug: { startsWith: "apt-" } },
+      where: { published: true, slug: { startsWith: "apt-top10-" } },
       orderBy: { publishedAt: "desc" },
       take: 4,
       select: { slug: true, title: true, publishedAt: true },
