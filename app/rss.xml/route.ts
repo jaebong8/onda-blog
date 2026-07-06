@@ -27,7 +27,7 @@ export async function GET() {
       publishedAt: true,
       category: { select: { name: true } },
     },
-  });
+  }).catch(() => []);
 
   const items = posts
     .map((post) => {

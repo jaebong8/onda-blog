@@ -35,17 +35,17 @@ export default async function HomePage() {
         category: { select: { name: true, slug: true } },
         tags: { select: { tag: { select: { name: true, slug: true } } } },
       },
-    }),
+    }).catch(() => []),
     prisma.category.findMany({
       orderBy: { name: "asc" },
       include: { _count: { select: { posts: { where: { published: true } } } } },
-    }),
+    }).catch(() => []),
     prisma.post.findMany({
       where: { published: true, views: { gt: 0 } },
       orderBy: { views: "desc" },
       take: 5,
       select: { slug: true, title: true, views: true, category: { select: { name: true } } },
-    }),
+    }).catch(() => []),
   ]);
 
   const posts = rawPosts.map((p) => ({

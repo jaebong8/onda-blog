@@ -264,6 +264,29 @@ export default async function PostPage({ params }: Props) {
         </div>
       )}
 
+      {/* 관련 계산기 */}
+      {aptCity && (
+        <div className="mt-3 rounded-lg border bg-muted/40 px-5 py-4">
+          <p className="text-xs font-medium text-muted-foreground mb-3">관련 계산기</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {([
+              { href: "/calculators/cheongyak", label: "청약 가점 계산기" },
+              { href: "/calculators/jungae", label: "중개수수료 계산기" },
+              { href: "/calculators/chwideukse", label: "취득세 계산기" },
+              { href: "/calculators/mortgage", label: "주담대 이자 계산기" },
+            ] as const).map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className="text-center text-xs font-medium px-3 py-2 rounded-md border bg-background hover:bg-muted/80 transition-colors"
+              >
+                {label} →
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 좋아요 */}
       <div className="mt-10 flex justify-center">
         <PostLikeButton

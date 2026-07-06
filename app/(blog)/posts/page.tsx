@@ -32,7 +32,7 @@ export default async function PostsPage({ searchParams }: Props) {
   const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
 
   const [total, posts] = await Promise.all([
-    prisma.post.count({ where: { published: true } }),
+    prisma.post.count({ where: { published: true } }).catch(() => 0),
     prisma.post.findMany({
       where: { published: true },
       orderBy: { publishedAt: "desc" },
@@ -48,7 +48,7 @@ export default async function PostsPage({ searchParams }: Props) {
         category: { select: { name: true, slug: true } },
         tags: { select: { tag: { select: { name: true, slug: true } } } },
       },
-    }),
+    }).catch(() => []),
   ]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));

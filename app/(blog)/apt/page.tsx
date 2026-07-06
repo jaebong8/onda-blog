@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Script from "next/script";
 import { prisma } from "@/lib/prisma";
 import { CITY_NAMES, REGIONS, extractCity } from "@/lib/apt-cities";
 
@@ -19,17 +20,35 @@ export const metadata: Metadata = {
 };
 
 export default async function AptHubPage() {
-  const posts = await prisma.post.findMany({
-    where: { published: true, slug: { startsWith: "apt-top10-" } },
-    select: { slug: true },
-  });
+  let posts: { slug: string }[] = [];
+  try {
+    posts = await prisma.post.findMany({
+      where: { published: true, slug: { startsWith: "apt-top10-" } },
+      select: { slug: true },
+    });
+  } catch {}
 
   const citiesWithData = new Set(
     posts.map((p) => extractCity(p.slug)).filter(Boolean) as string[]
   );
 
+  const orderedCities = REGIONS.flatMap((r) => r.cities.filter((c) => citiesWithData.has(c)));
+  const itemListLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "도시별 아파트 실거래가 · 전월세 TOP10",
+    url: `${siteUrl}/apt`,
+    itemListElement: orderedCities.map((city, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: `${siteUrl}/apt/${city}`,
+      name: `${CITY_NAMES[city]} 아파트 실거래가`,
+    })),
+  };
+
   return (
     <div className="space-y-10">
+      <Script id="itemlist-ld-apt" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }} />
       <header className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">도시별 아파트 실거래가 · 전월세</h1>
         <p className="text-muted-foreground">

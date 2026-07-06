@@ -45,16 +45,33 @@ function depScore(count: number) {
   return (count + 1) * 5;
 }
 
+// 배우자 가입기간의 50%에 해당하는 기간으로 산정한 점수, 최대 3점 (주택공급에 관한 규칙)
+// idx 0~1: 1년 미만 → 50% < 6개월 → 1점
+// idx 2: 1~2년 → 50% = 6개월~1년 → 2점
+// idx 3+: 2년 이상 → 50% ≥ 1년 → 3점 상한
+function spouseAccountBonus(idx: number): number {
+  if (idx <= 1) return 1;
+  if (idx === 2) return 2;
+  return 3;
+}
+
 export function CheongyakCalc() {
   const [hasHome, setHasHome] = useState(false);
   const [homelessIdx, setHomelessIdx] = useState(0);
   const [dependents, setDependents] = useState(0);
   const [accountIdx, setAccountIdx] = useState(0);
+  const [hasSpouse, setHasSpouse] = useState(false);
+  const [spouseAccountIdx, setSpouseAccountIdx] = useState(0);
 
   const homeless = hasHome ? 0 : HOMELESS_OPTIONS[homelessIdx].score;
   const dep = depScore(dependents);
   const account = ACCOUNT_OPTIONS[accountIdx].score;
-  const total = homeless + dep + account;
+
+  const spouseBonus = hasSpouse ? spouseAccountBonus(spouseAccountIdx) : 0;
+  // 본인 + 배우자 합산 최대 17점
+  const accountTotal = Math.min(account + spouseBonus, 17);
+
+  const total = homeless + dep + accountTotal;
 
   return (
     <div className="max-w-lg mx-auto space-y-6">
@@ -122,6 +139,41 @@ export function CheongyakCalc() {
         <div className="text-right text-lg font-bold text-primary">{account}점</div>
       </div>
 
+      {/* 배우자 청약통장 합산 */}
+      <div className="rounded-lg border bg-card p-5 space-y-3">
+        <div className="flex justify-between items-center">
+          <span className="font-medium">배우자 청약통장 합산</span>
+          <span className="text-sm text-muted-foreground">최대 +3점</span>
+        </div>
+        <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={hasSpouse}
+            onChange={(e) => setHasSpouse(e.target.checked)}
+            className="rounded"
+          />
+          배우자 청약통장 보유
+        </label>
+        {hasSpouse && (
+          <>
+            <select
+              value={spouseAccountIdx}
+              onChange={(e) => setSpouseAccountIdx(Number(e.target.value))}
+              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+            >
+              {ACCOUNT_OPTIONS.map((o, i) => (
+                <option key={i} value={i}>{o.label}</option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              가입기간의 50% 환산 → 가산점 {spouseBonus}점
+              {accountTotal === 17 && account < 17 && " (17점 상한 적용)"}
+            </p>
+            <div className="text-right text-lg font-bold text-primary">+{spouseBonus}점</div>
+          </>
+        )}
+      </div>
+
       {/* 결과 */}
       <div className="rounded-xl border-2 border-primary bg-primary/5 p-6 text-center space-y-4">
         <p className="text-sm text-muted-foreground font-medium">나의 청약 가점</p>
@@ -138,13 +190,19 @@ export function CheongyakCalc() {
           </div>
           <div>
             <p className="text-muted-foreground">청약통장</p>
-            <p className="font-bold text-base mt-1">{account}점 <span className="text-muted-foreground font-normal">/17</span></p>
+            <p className="font-bold text-base mt-1">
+              {accountTotal}점 <span className="text-muted-foreground font-normal">/17</span>
+            </p>
+            {hasSpouse && spouseBonus > 0 && (
+              <p className="text-xs text-muted-foreground mt-0.5">배우자 +{spouseBonus}점 포함</p>
+            )}
           </div>
         </div>
       </div>
 
       <p className="text-xs text-muted-foreground leading-relaxed">
-        * 「주택공급에 관한 규칙」 기준. 실제 가점은 단지별 모집공고 기준을 따르며 다를 수 있습니다.
+        * 「주택공급에 관한 규칙」 기준. 실제 가점은 단지별 모집공고 기준을 따르며 다를 수 있습니다.<br />
+        * 배우자 통장 합산은 배우자 가입기간의 50%를 본인 통장 가점에 합산하며, 통장 항목 합계는 17점을 초과할 수 없습니다.
       </p>
     </div>
   );

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Script from "next/script";
 
 export const revalidate = 3600;
 
@@ -43,9 +44,23 @@ const CALCULATORS = [
   },
 ];
 
+const ITEM_LIST_LD = {
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  name: "부동산 계산기 모음",
+  url: `${siteUrl}/calculators`,
+  itemListElement: CALCULATORS.map((calc, i) => ({
+    "@type": "ListItem",
+    position: i + 1,
+    url: `${siteUrl}${calc.href}`,
+    name: calc.title,
+  })),
+};
+
 export default function CalculatorsPage() {
   return (
     <div className="space-y-8">
+      <Script id="itemlist-ld-calculators" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ITEM_LIST_LD) }} />
       <header className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">부동산 계산기</h1>
         <p className="text-muted-foreground">청약·중개수수료·취득세·주담대 계산을 한 곳에서 무료로 이용하세요.</p>

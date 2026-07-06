@@ -45,18 +45,22 @@ export default async function CityAptPage({ params }: Props) {
   const cityName = CITY_NAMES[city];
   if (!cityName) notFound();
 
-  const [salePosts, rentPosts] = await Promise.all([
-    prisma.post.findMany({
-      where: { published: true, slug: { startsWith: `apt-top10-${city}-` } },
-      orderBy: { publishedAt: "desc" },
-      select: { slug: true, title: true, publishedAt: true },
-    }),
-    prisma.post.findMany({
-      where: { published: true, slug: { startsWith: `apt-rent-top10-${city}-` } },
-      orderBy: { publishedAt: "desc" },
-      select: { slug: true, title: true, publishedAt: true },
-    }),
-  ]);
+  let salePosts: { slug: string; title: string; publishedAt: Date | null }[] = [];
+  let rentPosts: { slug: string; title: string; publishedAt: Date | null }[] = [];
+  try {
+    [salePosts, rentPosts] = await Promise.all([
+      prisma.post.findMany({
+        where: { published: true, slug: { startsWith: `apt-top10-${city}-` } },
+        orderBy: { publishedAt: "desc" },
+        select: { slug: true, title: true, publishedAt: true },
+      }),
+      prisma.post.findMany({
+        where: { published: true, slug: { startsWith: `apt-rent-top10-${city}-` } },
+        orderBy: { publishedAt: "desc" },
+        select: { slug: true, title: true, publishedAt: true },
+      }),
+    ]);
+  } catch {}
 
   if (salePosts.length === 0 && rentPosts.length === 0) notFound();
 
