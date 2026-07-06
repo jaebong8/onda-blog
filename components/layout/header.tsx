@@ -20,6 +20,12 @@ export function Header() {
 
         <nav className="flex items-center gap-3 text-sm ml-auto">
           <Link
+            href="/calculators"
+            className="text-muted-foreground transition-colors hover:text-foreground"
+          >
+            계산기
+          </Link>
+          <Link
             href="/apt"
             className="text-muted-foreground transition-colors hover:text-foreground"
           >

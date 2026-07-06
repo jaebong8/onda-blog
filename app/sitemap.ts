@@ -49,6 +49,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }));
 
+  const calcEntries: MetadataRoute.Sitemap = [
+    { url: `${siteUrl}/calculators`, changeFrequency: "monthly", priority: 0.9 },
+    { url: `${siteUrl}/calculators/cheongyak`, changeFrequency: "yearly", priority: 0.8 },
+    { url: `${siteUrl}/calculators/jungae`, changeFrequency: "yearly", priority: 0.8 },
+    { url: `${siteUrl}/calculators/chwideukse`, changeFrequency: "yearly", priority: 0.8 },
+    { url: `${siteUrl}/calculators/mortgage`, changeFrequency: "yearly", priority: 0.8 },
+  ];
+
   const aptHubEntries: MetadataRoute.Sitemap = [
     { url: `${siteUrl}/apt`, changeFrequency: "monthly", priority: 0.8 },
     ...aptCities.map((city) => ({
@@ -69,6 +77,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 0.9,
     },
+    ...calcEntries,
     ...aptHubEntries,
     ...postEntries,
     ...categoryEntries,
