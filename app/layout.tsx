@@ -12,13 +12,13 @@ const pretendard = localFont({
   weight: "100 900",
 });
 
-const siteName = process.env.NEXT_PUBLIC_SITE_NAME ?? "My Blog";
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const siteName = process.env.NEXT_PUBLIC_SITE_NAME ?? "온다의 블로그";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://onda-blog.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   icons: {
-    icon: "/favicon.png",
+    icon: "/favicon2.png",
   },
   other: {
     "google-adsense-account": "ca-pub-1166748447929300",
