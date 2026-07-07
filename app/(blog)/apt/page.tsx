@@ -4,6 +4,16 @@ import Script from "next/script";
 import { prisma } from "@/lib/prisma";
 import { CITY_NAMES, REGIONS, extractCity } from "@/lib/apt-cities";
 
+const REGION_STYLE: Record<string, { icon: string; iconBg: string; accent: string }> = {
+  "수도권":    { icon: "🏙️", iconBg: "bg-blue-50 dark:bg-blue-950",    accent: "text-blue-600 dark:text-blue-400" },
+  "광역시":    { icon: "🌆", iconBg: "bg-emerald-50 dark:bg-emerald-950", accent: "text-emerald-600 dark:text-emerald-400" },
+  "충청·세종": { icon: "🌾", iconBg: "bg-amber-50 dark:bg-amber-950",   accent: "text-amber-600 dark:text-amber-400" },
+  "전라":      { icon: "🌊", iconBg: "bg-violet-50 dark:bg-violet-950",  accent: "text-violet-600 dark:text-violet-400" },
+  "경상":      { icon: "⛰️", iconBg: "bg-orange-50 dark:bg-orange-950",  accent: "text-orange-600 dark:text-orange-400" },
+  "강원":      { icon: "🏔️", iconBg: "bg-cyan-50 dark:bg-cyan-950",    accent: "text-cyan-600 dark:text-cyan-400" },
+  "제주":      { icon: "🌺", iconBg: "bg-pink-50 dark:bg-pink-950",     accent: "text-pink-600 dark:text-pink-400" },
+};
+
 export const revalidate = 3600;
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -60,20 +70,29 @@ export default async function AptHubPage() {
         {REGIONS.map((region) => {
           const activeCities = region.cities.filter((c) => citiesWithData.has(c));
           if (activeCities.length === 0) return null;
+          const style = REGION_STYLE[region.name] ?? { icon: "🏠", iconBg: "bg-muted", accent: "text-muted-foreground" };
           return (
             <section key={region.name}>
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                {region.name}
-              </h2>
+              <div className="flex items-center gap-2 mb-4">
+                <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-base ${style.iconBg}`}>
+                  {style.icon}
+                </span>
+                <h2 className={`text-sm font-semibold ${style.accent}`}>{region.name}</h2>
+              </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {activeCities.map((city) => (
                   <Link
                     key={city}
                     href={`/apt/${city}`}
-                    className="rounded-lg border bg-card px-4 py-3 hover:shadow-md hover:border-primary/40 hover:-translate-y-0.5 transition-all duration-200 group"
+                    className="rounded-xl border bg-card p-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group flex flex-col gap-2"
                   >
-                    <span className="font-medium group-hover:text-primary transition-colors">{CITY_NAMES[city]}</span>
-                    <span className="block text-xs text-muted-foreground mt-0.5">매매 · 전월세</span>
+                    <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-base ${style.iconBg}`}>
+                      {style.icon}
+                    </span>
+                    <div>
+                      <p className="font-medium text-sm group-hover:text-primary transition-colors">{CITY_NAMES[city]}</p>
+                      <p className={`text-xs mt-0.5 font-medium ${style.accent}`}>매매 · 전월세 →</p>
+                    </div>
                   </Link>
                 ))}
               </div>

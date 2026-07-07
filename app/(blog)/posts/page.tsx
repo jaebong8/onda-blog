@@ -6,6 +6,21 @@ import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/utils/date";
 import { extractFirstImage } from "@/lib/utils/extract-image";
 
+const CATEGORY_PALETTES = [
+  "bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400",
+  "bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400",
+  "bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400",
+  "bg-violet-50 dark:bg-violet-950 text-violet-600 dark:text-violet-400",
+  "bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-400",
+  "bg-cyan-50 dark:bg-cyan-950 text-cyan-600 dark:text-cyan-400",
+];
+
+function categoryColor(name: string): string {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) | 0;
+  return CATEGORY_PALETTES[Math.abs(h) % CATEGORY_PALETTES.length];
+}
+
 export const revalidate = 3600;
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -84,12 +99,14 @@ export default async function PostsPage({ searchParams }: Props) {
                     </div>
                   )}
                   <div className="flex-1 min-w-0 space-y-1.5">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 text-sm">
                       {post.category && (
-                        <span>{post.category.name}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${categoryColor(post.category.name)}`}>
+                          {post.category.name}
+                        </span>
                       )}
                       {post.publishedAt && (
-                        <span>{formatDate(post.publishedAt)}</span>
+                        <span className="text-muted-foreground">{formatDate(post.publishedAt)}</span>
                       )}
                     </div>
                     <h2 className="text-xl font-semibold group-hover:underline underline-offset-4">

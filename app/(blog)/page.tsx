@@ -85,11 +85,11 @@ export default async function HomePage() {
         </h1>
         <p className="text-muted-foreground">{siteDescription}</p>
         <div className="flex flex-wrap gap-2 pt-1">
-          <Link href="/calculators" className="text-xs px-3 py-1.5 rounded-full bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors">
-            부동산 계산기
+          <Link href="/calculators" className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-full bg-primary/10 text-primary font-medium hover:bg-primary/20 transition-colors">
+            🧮 부동산 계산기
           </Link>
-          <Link href="/apt" className="text-xs px-3 py-1.5 rounded-full border bg-background font-medium hover:bg-muted transition-colors">
-            아파트 실거래가
+          <Link href="/apt" className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-full bg-muted text-foreground font-medium hover:bg-muted/70 transition-colors">
+            🏢 아파트 실거래가
           </Link>
         </div>
       </section>
