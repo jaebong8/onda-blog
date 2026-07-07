@@ -7,8 +7,8 @@ export const revalidate = 3600;
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 export const metadata: Metadata = {
-  title: "부동산 계산기 모음 — 청약가점·중개수수료·취득세·주담대·양도소득세",
-  description: "청약 가점 계산기, 공인중개사 수수료 계산기, 취득세 계산기, 주택담보대출 이자 계산기, 양도소득세 계산기를 한 곳에서 무료로 이용하세요.",
+  title: "부동산 계산기 모음 — 청약가점·중개수수료·취득세·주담대·양도소득세·증여세",
+  description: "청약 가점·중개수수료·취득세·주담대 이자·양도소득세·증여세 계산기를 한 곳에서 무료로 이용하세요.",
   alternates: { canonical: `${siteUrl}/calculators` },
   openGraph: {
     title: "부동산 계산기 모음",
@@ -62,6 +62,15 @@ const CALCULATORS = [
     icon: "💰",
     iconBg: "bg-rose-50 dark:bg-rose-950",
     accent: "text-rose-600 dark:text-rose-400",
+  },
+  {
+    href: "/calculators/jeungye",
+    title: "증여세 계산기",
+    desc: "부동산·현금 증여 시 납부할 증여세를 계산합니다. 증여재산공제, 세대생략 할증, 신고세액공제 3%를 자동 반영합니다.",
+    badge: "세대생략 할증 포함",
+    icon: "🎁",
+    iconBg: "bg-teal-50 dark:bg-teal-950",
+    accent: "text-teal-600 dark:text-teal-400",
   },
 ];
 
