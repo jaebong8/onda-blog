@@ -71,7 +71,7 @@ export default async function MortgageCalcPage() {
           <span className="mx-1.5">→</span>
           <span>주담대 이자 계산기</span>
         </nav>
-        <h1 className="text-3xl font-bold tracking-tight">주택담보대출 이자 계산기</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">주택담보대출 이자 계산기</h1>
         <p className="text-muted-foreground">대출금액·금리·기간·상환 방식을 선택하면 월 납부액과 총 이자를 계산합니다.</p>
       </header>
 
@@ -80,7 +80,7 @@ export default async function MortgageCalcPage() {
       <section className="border-t pt-8 space-y-4">
         <h2 className="text-lg font-semibold">상환 방식 비교</h2>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
+          <table className="w-full min-w-120 text-sm border-collapse">
             <thead><tr className="border-b text-muted-foreground text-xs">
               <th className="text-left py-2 pr-4">방식</th>
               <th className="text-left py-2 pr-4">특징</th>

@@ -57,7 +57,7 @@ export default async function PostsPage({ searchParams }: Props) {
   return (
     <div className="space-y-10">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">전체 글</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">전체 글</h1>
         <p className="text-muted-foreground mt-1">
           총 {total}개의 글이 있습니다.
         </p>

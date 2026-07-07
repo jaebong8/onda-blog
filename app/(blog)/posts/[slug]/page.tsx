@@ -210,7 +210,7 @@ export default async function PostPage({ params }: Props) {
             <span className="text-muted-foreground">by {post.author.name}</span>
             <ViewCounter slug={decodedSlug} views={post.views} />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">{post.title}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{post.title}</h1>
           <p className="text-lg text-muted-foreground">{post.excerpt}</p>
           {post.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
@@ -241,7 +241,7 @@ export default async function PostPage({ params }: Props) {
                 (_, tag) =>
                   `<a href="/tags/${encodeURIComponent(tag)}" class="text-primary font-medium hover:underline underline-offset-2">#${tag}</a>`
               )
-              .replace(/<table/gi, '<div class="table-wrapper"><table')
+              .replace(/<table/gi, '<div class="overflow-x-auto w-full"><table')
               .replace(/<\/table>/gi, "</table></div>"),
           }}
           className="mt-8"

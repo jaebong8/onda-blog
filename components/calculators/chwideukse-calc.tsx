@@ -144,7 +144,7 @@ export function ChwideukseCalc() {
       {p > 0 && (
         <div className="rounded-xl border-2 border-primary bg-primary/5 p-6 space-y-4">
           <p className="text-sm font-medium text-muted-foreground text-center">세금 합계</p>
-          <p className="text-4xl font-bold text-center text-primary">{fmtWon(Math.round(total))}</p>
+          <p className="text-3xl sm:text-4xl font-bold text-center text-primary">{fmtWon(Math.round(total))}</p>
           <div className="space-y-2 pt-3 border-t border-primary/20 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">취득세 ({(rate * 100).toFixed(2)}%)</span>

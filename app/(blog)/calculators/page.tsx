@@ -62,7 +62,7 @@ export default function CalculatorsPage() {
     <div className="space-y-8">
       <Script id="itemlist-ld-calculators" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ITEM_LIST_LD) }} />
       <header className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">부동산 계산기</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">부동산 계산기</h1>
         <p className="text-muted-foreground">청약·중개수수료·취득세·주담대 계산을 한 곳에서 무료로 이용하세요.</p>
       </header>
 

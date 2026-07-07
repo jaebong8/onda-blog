@@ -50,7 +50,7 @@ export default async function AptHubPage() {
     <div className="space-y-10">
       <Script id="itemlist-ld-apt" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }} />
       <header className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">도시별 아파트 실거래가 · 전월세</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">도시별 아파트 실거래가 · 전월세</h1>
         <p className="text-muted-foreground">
           매월 국토교통부 실거래가 기준으로 발행됩니다. 도시를 선택하면 월별 TOP10 데이터를 확인할 수 있습니다.
         </p>

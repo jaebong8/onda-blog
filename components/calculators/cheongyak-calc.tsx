@@ -177,7 +177,7 @@ export function CheongyakCalc() {
       {/* 결과 */}
       <div className="rounded-xl border-2 border-primary bg-primary/5 p-6 text-center space-y-4">
         <p className="text-sm text-muted-foreground font-medium">나의 청약 가점</p>
-        <p className="text-7xl font-bold text-primary">{total}<span className="text-3xl">점</span></p>
+        <p className="text-5xl sm:text-7xl font-bold text-primary">{total}<span className="text-2xl sm:text-3xl">점</span></p>
         <p className="text-sm text-muted-foreground">만점 84점 기준</p>
         <div className="grid grid-cols-3 gap-3 pt-4 border-t border-primary/20 text-sm">
           <div>

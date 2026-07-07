@@ -71,7 +71,7 @@ export default async function ChwideukseCalcPage() {
           <span className="mx-1.5">→</span>
           <span>취득세 계산기</span>
         </nav>
-        <h1 className="text-3xl font-bold tracking-tight">취득세 계산기</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">취득세 계산기</h1>
         <p className="text-muted-foreground">아파트·주택 취득 시 납부할 취득세, 지방교육세, 농어촌특별세 합계를 계산합니다.</p>
       </header>
 

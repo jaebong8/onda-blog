@@ -71,7 +71,7 @@ export default async function JungaeCalcPage() {
           <span className="mx-1.5">→</span>
           <span>중개수수료 계산기</span>
         </nav>
-        <h1 className="text-3xl font-bold tracking-tight">부동산 중개수수료 계산기</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">부동산 중개수수료 계산기</h1>
         <p className="text-muted-foreground">매매·전세·월세 거래금액을 입력하면 공인중개사 상한 수수료와 VAT 포함 금액을 계산합니다.</p>
       </header>
 
@@ -83,7 +83,7 @@ export default async function JungaeCalcPage() {
           <div>
             <h3 className="text-sm font-semibold mb-2">매매</h3>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm border-collapse">
+              <table className="w-full min-w-80 text-sm border-collapse">
                 <thead><tr className="border-b text-muted-foreground text-xs">
                   <th className="text-left py-2 pr-3">거래금액</th>
                   <th className="text-right py-2 pr-3">상한 요율</th>
@@ -103,7 +103,7 @@ export default async function JungaeCalcPage() {
           <div>
             <h3 className="text-sm font-semibold mb-2">전·월세</h3>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm border-collapse">
+              <table className="w-full min-w-80 text-sm border-collapse">
                 <thead><tr className="border-b text-muted-foreground text-xs">
                   <th className="text-left py-2 pr-3">거래금액</th>
                   <th className="text-right py-2 pr-3">상한 요율</th>

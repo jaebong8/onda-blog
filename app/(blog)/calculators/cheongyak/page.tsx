@@ -71,7 +71,7 @@ export default async function CheongyakCalcPage() {
           <span className="mx-1.5">→</span>
           <span>청약 가점 계산기</span>
         </nav>
-        <h1 className="text-3xl font-bold tracking-tight">청약 가점 계산기</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">청약 가점 계산기</h1>
         <p className="text-muted-foreground">무주택 기간·부양가족 수·청약통장 가입 기간을 선택하면 총 가점을 계산합니다. (만점 84점)</p>
       </header>
 

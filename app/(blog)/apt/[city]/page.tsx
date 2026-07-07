@@ -72,7 +72,7 @@ export default async function CityAptPage({ params }: Props) {
           <span className="mx-1.5">→</span>
           <span>{cityName}</span>
         </nav>
-        <h1 className="text-3xl font-bold tracking-tight">{cityName} 아파트 실거래가 · 전월세 TOP10</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{cityName} 아파트 실거래가 · 전월세 TOP10</h1>
         <p className="text-muted-foreground">국토교통부 실거래가 기준. 매월 최신 데이터로 업데이트됩니다.</p>
       </header>
 

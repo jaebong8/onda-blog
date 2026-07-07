@@ -80,7 +80,7 @@ export default async function HomePage() {
     <Script id="json-ld-website" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
     <div className="space-y-8">
       <section>
-        <h1 className="text-3xl font-bold tracking-tight mb-2">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">
           {process.env.NEXT_PUBLIC_SITE_NAME ?? "My Blog"}
         </h1>
         <p className="text-muted-foreground">최신 글을 확인하세요.</p>
