@@ -88,7 +88,7 @@ export default async function HomePage() {
           <Link href="/calculators" className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-full bg-primary/10 text-primary font-medium hover:bg-primary/20 transition-colors">
             🧮 부동산 계산기
           </Link>
-          <Link href="/apt" className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-full bg-muted text-foreground font-medium hover:bg-muted/70 transition-colors">
+          <Link href="/apt" className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-full bg-primary/10 text-primary font-medium hover:bg-primary/20 transition-colors">
             🏢 아파트 실거래가
           </Link>
         </div>
