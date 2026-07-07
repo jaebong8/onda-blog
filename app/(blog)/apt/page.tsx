@@ -70,9 +70,9 @@ export default async function AptHubPage() {
                   <Link
                     key={city}
                     href={`/apt/${city}`}
-                    className="rounded-lg border bg-card px-4 py-3 hover:shadow-sm hover:bg-accent transition-all"
+                    className="rounded-lg border bg-card px-4 py-3 hover:shadow-md hover:border-primary/40 hover:-translate-y-0.5 transition-all duration-200 group"
                   >
-                    <span className="font-medium">{CITY_NAMES[city]}</span>
+                    <span className="font-medium group-hover:text-primary transition-colors">{CITY_NAMES[city]}</span>
                     <span className="block text-xs text-muted-foreground mt-0.5">매매 · 전월세</span>
                   </Link>
                 ))}

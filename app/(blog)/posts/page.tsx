@@ -70,7 +70,7 @@ export default async function PostsPage({ searchParams }: Props) {
           posts.map((post) => {
             const thumbSrc = post.thumbnail || extractFirstImage(post.content);
             return (
-              <article key={post.slug} className="group pb-8 border-b last:border-0">
+              <article key={post.slug} className="group pb-8 border-b last:border-0 hover:-translate-y-0.5 transition-transform duration-200">
                 <Link href={`/posts/${post.slug}`} className="flex gap-4 sm:gap-6">
                   {thumbSrc && (
                     <div className="relative shrink-0 w-24 h-24 sm:w-36 sm:h-28 rounded-lg overflow-hidden bg-muted">

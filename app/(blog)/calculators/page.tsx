@@ -23,24 +23,36 @@ const CALCULATORS = [
     title: "청약 가점 계산기",
     desc: "무주택 기간·부양가족·청약통장 가입 기간을 입력하면 총 가점을 즉시 계산합니다.",
     badge: "최대 84점",
+    icon: "🏠",
+    iconBg: "bg-blue-50 dark:bg-blue-950",
+    accent: "text-blue-600 dark:text-blue-400",
   },
   {
     href: "/calculators/jungae",
     title: "중개수수료 계산기",
     desc: "매매·전세·월세 거래금액에 따른 공인중개사 상한 수수료와 VAT 포함 금액을 계산합니다.",
     badge: "2021년 개정 기준",
+    icon: "🤝",
+    iconBg: "bg-emerald-50 dark:bg-emerald-950",
+    accent: "text-emerald-600 dark:text-emerald-400",
   },
   {
     href: "/calculators/chwideukse",
     title: "취득세 계산기",
     desc: "취득가액·주택 수·조정대상지역 여부·전용면적을 입력하면 취득세·지방교육세·농특세를 계산합니다.",
     badge: "다주택 중과 포함",
+    icon: "📋",
+    iconBg: "bg-amber-50 dark:bg-amber-950",
+    accent: "text-amber-600 dark:text-amber-400",
   },
   {
     href: "/calculators/mortgage",
     title: "주담대 이자 계산기",
     desc: "원리금균등·원금균등·만기일시 상환 방식별 월 납부액과 총 이자를 연도별로 계산합니다.",
     badge: "3가지 상환 방식",
+    icon: "🏦",
+    iconBg: "bg-violet-50 dark:bg-violet-950",
+    accent: "text-violet-600 dark:text-violet-400",
   },
 ];
 
@@ -71,14 +83,19 @@ export default function CalculatorsPage() {
           <Link
             key={calc.href}
             href={calc.href}
-            className="rounded-xl border bg-card p-6 hover:shadow-md hover:border-primary/50 transition-all space-y-3 group"
+            className="rounded-xl border bg-card p-6 hover:shadow-md hover:-translate-y-1 transition-all duration-200 space-y-4 group flex flex-col"
           >
             <div className="flex items-start justify-between gap-2">
-              <h2 className="text-lg font-semibold group-hover:text-primary transition-colors">{calc.title}</h2>
-              <span className="shrink-0 text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{calc.badge}</span>
+              <span className={`w-11 h-11 rounded-xl flex items-center justify-center text-2xl ${calc.iconBg}`}>
+                {calc.icon}
+              </span>
+              <span className="shrink-0 text-xs px-2.5 py-1 rounded-full bg-muted text-muted-foreground font-medium mt-0.5">{calc.badge}</span>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">{calc.desc}</p>
-            <p className="text-sm font-medium text-primary">계산하기 →</p>
+            <div className="flex-1 space-y-1.5">
+              <h2 className="text-lg font-semibold group-hover:text-primary transition-colors">{calc.title}</h2>
+              <p className="text-sm text-muted-foreground leading-relaxed">{calc.desc}</p>
+            </div>
+            <p className={`text-sm font-semibold ${calc.accent}`}>계산하기 →</p>
           </Link>
         ))}
       </div>

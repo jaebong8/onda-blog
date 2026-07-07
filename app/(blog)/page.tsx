@@ -79,11 +79,19 @@ export default async function HomePage() {
     <>
     <Script id="json-ld-website" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
     <div className="space-y-8">
-      <section>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">
+      <section className="rounded-2xl border bg-linear-to-br from-primary/10 to-transparent p-6 sm:p-8 space-y-3">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
           {process.env.NEXT_PUBLIC_SITE_NAME ?? "My Blog"}
         </h1>
-        <p className="text-muted-foreground">최신 글을 확인하세요.</p>
+        <p className="text-muted-foreground">{siteDescription}</p>
+        <div className="flex flex-wrap gap-2 pt-1">
+          <Link href="/calculators" className="text-xs px-3 py-1.5 rounded-full bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors">
+            부동산 계산기
+          </Link>
+          <Link href="/apt" className="text-xs px-3 py-1.5 rounded-full border bg-background font-medium hover:bg-muted transition-colors">
+            아파트 실거래가
+          </Link>
+        </div>
       </section>
 
       <PostFilter posts={posts} categories={activeCategories} />
@@ -104,7 +112,12 @@ export default async function HomePage() {
           <ol className="space-y-3">
             {popularPosts.map((post, idx) => (
               <li key={post.slug} className="flex items-start gap-3">
-                <span className="shrink-0 w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">
+                <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                  idx === 0 ? "bg-primary text-primary-foreground" :
+                  idx === 1 ? "bg-primary/60 text-primary-foreground" :
+                  idx === 2 ? "bg-primary/30 text-primary-foreground" :
+                  "bg-muted text-muted-foreground"
+                }`}>
                   {idx + 1}
                 </span>
                 <div className="min-w-0">
