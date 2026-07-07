@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import Script from "next/script";
 import { prisma } from "@/lib/prisma";
 import { extractFirstImage } from "@/lib/utils/extract-image";
@@ -80,9 +81,18 @@ export default async function HomePage() {
     <Script id="json-ld-website" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
     <div className="space-y-8">
       <section className="rounded-2xl border bg-linear-to-br from-primary/10 to-transparent p-6 sm:p-8 space-y-3">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-          {process.env.NEXT_PUBLIC_SITE_NAME ?? "My Blog"}
-        </h1>
+        <div className="flex items-center gap-3">
+          <Image
+            src="/favicon2.png"
+            alt={siteName}
+            width={40}
+            height={40}
+            className="rounded-full"
+          />
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            {process.env.NEXT_PUBLIC_SITE_NAME ?? "My Blog"}
+          </h1>
+        </div>
         <p className="text-muted-foreground">{siteDescription}</p>
         <div className="flex flex-wrap gap-2 pt-1">
           <Link href="/calculators" className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-full bg-primary/10 text-primary font-medium hover:bg-primary/20 transition-colors">
