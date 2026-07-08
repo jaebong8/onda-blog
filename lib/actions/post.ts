@@ -20,6 +20,15 @@ export async function requireAuth() {
   return session.user.id;
 }
 
+async function ensureUniqueSlug(base: string): Promise<string> {
+  let slug = base;
+  let n = 2;
+  while (await prisma.post.findFirst({ where: { slug }, select: { id: true } })) {
+    slug = `${base}-${n++}`;
+  }
+  return slug;
+}
+
 async function upsertHashtagTags(content: string) {
   const names = extractHashtags(content);
   if (names.length === 0) return [];
@@ -39,7 +48,7 @@ export async function createPost(formData: FormData) {
   const authorId = await requireAuth();
 
   const title = formData.get("title") as string;
-  const slug = generateSlug(title);
+  const slug = await ensureUniqueSlug(generateSlug(title));
   const content = formData.get("content") as string;
   const excerpt = extractExcerpt(content);
   const published = formData.get("published") === "true";
