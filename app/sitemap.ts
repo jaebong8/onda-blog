@@ -31,20 +31,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   const postEntries: MetadataRoute.Sitemap = posts.map((post: { slug: string; updatedAt: Date }) => ({
-    url: `${siteUrl}/posts/${post.slug}`,
+    url: `${siteUrl}/posts/${encodeURIComponent(post.slug)}`,
     lastModified: post.updatedAt,
     changeFrequency: "weekly",
     priority: 0.8,
   }));
 
   const categoryEntries: MetadataRoute.Sitemap = categories.map((cat: { slug: string }) => ({
-    url: `${siteUrl}/categories/${cat.slug}`,
+    url: `${siteUrl}/categories/${encodeURIComponent(cat.slug)}`,
     changeFrequency: "weekly",
     priority: 0.6,
   }));
 
   const tagEntries: MetadataRoute.Sitemap = tags.map((tag: { slug: string }) => ({
-    url: `${siteUrl}/tags/${tag.slug}`,
+    url: `${siteUrl}/tags/${encodeURIComponent(tag.slug)}`,
     changeFrequency: "weekly",
     priority: 0.5,
   }));
@@ -55,6 +55,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/calculators/jungae`, changeFrequency: "yearly", priority: 0.8 },
     { url: `${siteUrl}/calculators/chwideukse`, changeFrequency: "yearly", priority: 0.8 },
     { url: `${siteUrl}/calculators/mortgage`, changeFrequency: "yearly", priority: 0.8 },
+    { url: `${siteUrl}/calculators/yangdo`, changeFrequency: "yearly", priority: 0.8 },
+    { url: `${siteUrl}/calculators/jeungye`, changeFrequency: "yearly", priority: 0.8 },
   ];
 
   const aptHubEntries: MetadataRoute.Sitemap = [

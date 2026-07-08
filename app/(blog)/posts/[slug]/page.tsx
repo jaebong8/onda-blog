@@ -62,21 +62,24 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const post = await getPost(decodeURIComponent(slug));
+  const decodedSlug = decodeURIComponent(slug);
+  const post = await getPost(decodedSlug);
 
   if (!post) return {};
+
+  const canonicalUrl = `${siteUrl}/posts/${encodeURIComponent(decodedSlug)}`;
 
   return {
     title: post.metaTitle ?? post.title,
     description: post.metaDescription ?? post.excerpt,
     alternates: {
-      canonical: `${siteUrl}/posts/${slug}`,
+      canonical: canonicalUrl,
     },
     openGraph: {
       title: post.metaTitle ?? post.title,
       description: post.metaDescription ?? post.excerpt,
       type: "article",
-      url: `${siteUrl}/posts/${slug}`,
+      url: canonicalUrl,
       ...(post.ogImage && { images: [{ url: post.ogImage }] }),
       publishedTime: post.publishedAt?.toISOString(),
       modifiedTime: post.updatedAt.toISOString(),
