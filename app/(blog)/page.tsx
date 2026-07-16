@@ -87,6 +87,7 @@ export default async function HomePage() {
             alt={siteName}
             width={40}
             height={40}
+            priority
             className="rounded-full"
           />
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">

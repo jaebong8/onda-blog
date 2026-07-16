@@ -72,7 +72,7 @@ export function PostFilter({ posts, categories }: Props) {
           {posts.length === 0 ? (
             <p className="text-muted-foreground">글이 없습니다.</p>
           ) : (
-            posts.map((post) => (
+            posts.map((post, idx) => (
               <article key={post.slug} className="group rounded-xl border bg-card p-4 sm:p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
                 <Link href={`/posts/${post.slug}`} className="flex gap-4 sm:gap-6">
                   {post.thumbSrc && (
@@ -81,6 +81,7 @@ export function PostFilter({ posts, categories }: Props) {
                         src={post.thumbSrc}
                         alt={post.title}
                         fill
+                        priority={idx === 0}
                         className="object-cover transition-transform group-hover:scale-105"
                         sizes="(max-width: 640px) 96px, 144px"
                       />
