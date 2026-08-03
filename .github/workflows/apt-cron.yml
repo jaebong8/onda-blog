@@ -1,0 +1,91 @@
+name: Monthly Apt Price Cron
+
+# 한국 공공데이터 API는 GitHub 러너(미국)에서 직접 못 부른다(ETIMEDOUT).
+# 그래서 러너는 Vercel(sin1)에 요청만 던지고, 실제 API 호출은 Vercel이 한다.
+# 34개 시도를 한 번에 처리하면 Vercel 함수 타임아웃에 걸리므로 ?sido= 로 쪼개 부른다.
+on:
+  schedule:
+    - cron: '0 4 1 * *'   # 매월 1일 04:00 UTC (13:00 KST)
+    - cron: '0 4 15 * *'  # 15일 재실행 — 실거래 신고기한이 계약 후 30일이라 1일엔 전월 말 계약분이 빠진다
+  workflow_dispatch:
+
+jobs:
+  run-cron:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Load 시도 목록
+        id: sido
+        run: |
+          node -e '
+            const src = require("fs").readFileSync("lib/apt-regions.ts", "utf8");
+            const block = src.match(/SIDO_LIST\s*=\s*\[([\s\S]*?)\]/)[1];
+            for (const m of block.matchAll(/"([^"]+)"/g)) console.log(m[1]);
+          ' > sido.txt
+          echo "총 $(wc -l < sido.txt)개 시도"
+
+      - name: 시도별 순차 발행
+        env:
+          SITE_URL: ${{ secrets.SITE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          failed=()
+
+          # 시도 하나를 발행한다. status가 ok/no_deals가 아니면 1회 재시도.
+          run_one() {
+            local type="$1" sido="$2"
+            for attempt in 1 2; do
+              local code
+              code=$(curl -sS -G --data-urlencode "sido=$sido" \
+                -H "Authorization: Bearer $CRON_SECRET" \
+                -o body.json -w "%{http_code}" \
+                "$SITE_URL/api/cron/$type") || code="000"
+
+              if [ "$code" = "200" ]; then
+                local status
+                status=$(node -e '
+                  try {
+                    const d = JSON.parse(require("fs").readFileSync("body.json", "utf8"));
+                    console.log(d.results?.[0]?.status ?? "empty");
+                  } catch { console.log("unparsable"); }
+                ')
+                case "$status" in
+                  ok|no_deals|no_lawdcds)
+                    echo "  ✓ $sido — $status"
+                    return 0
+                    ;;
+                esac
+                echo "  ! $sido — $status (시도 $attempt/2)"
+              else
+                echo "  ! $sido — HTTP $code (시도 $attempt/2)"
+              fi
+              [ "$attempt" = "1" ] && sleep 5
+            done
+
+            echo "  ✗ $sido — 실패"
+            head -c 300 body.json; echo
+            failed+=("$type/$sido")
+            return 0
+          }
+
+          for type in apt-price apt-rent; do
+            echo "===== $type ====="
+            while IFS= read -r sido; do
+              [ -z "$sido" ] && continue
+              run_one "$type" "$sido"
+            done < sido.txt
+          done
+
+          echo
+          if [ ${#failed[@]} -eq 0 ]; then
+            echo "전체 성공"
+          else
+            echo "::warning::${#failed[@]}건 실패: ${failed[*]}"
+            # 절반 넘게 실패하면 워크플로를 실패로 표시해 알림이 오게 한다
+            if [ ${#failed[@]} -gt 34 ]; then
+              echo "::error::실패가 과반이다. 발행 상태를 확인하라."
+              exit 1
+            fi
+          fi

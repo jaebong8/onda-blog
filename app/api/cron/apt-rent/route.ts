@@ -124,7 +124,8 @@ export async function GET(request: Request) {
           excerpt,
           content,
           published: true,
-          publishedAt: new Date(),
+          // publishedAt은 갱신하지 않는다. 재실행(재시도·월중 갱신) 때마다
+          // 발행일이 밀려 글이 목록 맨 위로 다시 올라오는 걸 막는다.
           metaTitle,
           metaDescription,
           categoryId: category.id,
