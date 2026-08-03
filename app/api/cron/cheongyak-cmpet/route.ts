@@ -29,24 +29,25 @@ export async function GET(request: Request) {
   const raw = searchParams.get("raw") === "true";
 
   // 2주 전 월~일 (KST 기준) — 당첨자 발표까지 7~14일 걸려 1주 전은 집계중이 많음
-  const kstNow = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
-  const dow = kstNow.getDay();
+  // UTC+9로 시프트한 뒤 UTC 메서드만 쓴다. 서버 로컬 타임존과 무관하게 KST 달력 날짜가 나온다.
+  const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const dow = kstNow.getUTCDay();
   const thisMonday = new Date(kstNow);
-  thisMonday.setDate(kstNow.getDate() - (dow === 0 ? 6 : dow - 1));
-  thisMonday.setHours(0, 0, 0, 0);
+  thisMonday.setUTCDate(kstNow.getUTCDate() - (dow === 0 ? 6 : dow - 1));
+  thisMonday.setUTCHours(0, 0, 0, 0);
 
   const lastMonday = new Date(thisMonday);
-  lastMonday.setDate(thisMonday.getDate() - 14);
+  lastMonday.setUTCDate(thisMonday.getUTCDate() - 14);
   const lastSunday = new Date(thisMonday);
-  lastSunday.setDate(thisMonday.getDate() - 8);
+  lastSunday.setUTCDate(thisMonday.getUTCDate() - 8);
 
   const lastWeekStart = lastMonday.toISOString().slice(0, 10);
   const lastWeekEnd = lastSunday.toISOString().slice(0, 10);
 
-  const year = lastMonday.getFullYear();
-  const month = String(lastMonday.getMonth() + 1).padStart(2, "0");
-  const weekOfMonth = Math.ceil(lastMonday.getDate() / 7);
-  const mondayStr = lastMonday.toISOString().slice(0, 10).replace(/-/g, "");
+  const year = lastMonday.getUTCFullYear();
+  const month = String(lastMonday.getUTCMonth() + 1).padStart(2, "0");
+  const weekOfMonth = Math.ceil(lastMonday.getUTCDate() / 7);
+  const mondayStr = lastWeekStart.replace(/-/g, "");
 
   // 지난주에 마감된 청약 목록
   const allListings = await fetchAPTListings(apiKey, lastWeekStart);

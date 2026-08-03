@@ -6,6 +6,20 @@ const APT_RENT_API = "https://apis.data.go.kr/1613000/RTMSDataSvcAptRent/getRTMS
 
 const xmlParser = new XMLParser({ ignoreAttributes: false, parseTagValue: true });
 
+// 공공데이터포털은 간헐적으로 커넥션을 끊는다(ECONNRESET). 네트워크 오류만 재시도.
+async function fetchWithRetry(url: string, attempts = 3): Promise<Response> {
+  let lastErr: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fetch(url);
+    } catch (e) {
+      lastErr = e;
+      if (i < attempts - 1) await new Promise((r) => setTimeout(r, 500 * 2 ** i));
+    }
+  }
+  throw lastErr;
+}
+
 export interface AptDeal {
   aptNm: string;
   dealAmount: number; // 만원
@@ -30,7 +44,7 @@ export async function fetchSiGunGuCodes(sidoNm: string, apiKey: string): Promise
   url.searchParams.set("type", "json");
   url.searchParams.set("locatadd_nm", sidoNm);
 
-  const res = await fetch(url.toString());
+  const res = await fetchWithRetry(url.toString());
   if (!res.ok) throw new Error(`StanReginCd API ${res.status}`);
 
   const data = await res.json();
@@ -113,7 +127,7 @@ export async function fetchAptDeals(lawdCd: string, dealYmd: string, apiKey: str
   url.searchParams.set("numOfRows", "1000");
   url.searchParams.set("pageNo", "1");
 
-  const res = await fetch(url.toString());
+  const res = await fetchWithRetry(url.toString());
   if (!res.ok) throw new Error(`AptTrade API ${res.status} for ${lawdCd}`);
 
   const xml = await res.text();
@@ -173,7 +187,7 @@ export async function fetchAptRentDeals(lawdCd: string, dealYmd: string, apiKey:
   url.searchParams.set("numOfRows", "1000");
   url.searchParams.set("pageNo", "1");
 
-  const res = await fetch(url.toString());
+  const res = await fetchWithRetry(url.toString());
   if (!res.ok) throw new Error(`AptRent API ${res.status} for ${lawdCd}`);
 
   const xml = await res.text();

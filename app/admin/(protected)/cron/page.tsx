@@ -3,16 +3,21 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
+type SidoResult = {
+  sido: string;
+  status: string;
+  count?: number;
+  jeonseCount?: number;
+  wolseCount?: number;
+  failed?: number;
+  total?: number;
+};
+
 type CronResult = {
   ok: boolean;
   dealYmd: string;
-  results: Array<{
-    sido: string;
-    status: string;
-    count?: number;
-    jeonseCount?: number;
-    wolseCount?: number;
-  }>;
+  revalidated?: string;
+  results: SidoResult[];
 };
 
 type State = { loading: boolean; data: CronResult | null; error: string | null };
@@ -23,14 +28,28 @@ function prevMonthLabel() {
   return `${d.getFullYear()}년 ${String(d.getMonth() + 1).padStart(2, "0")}월`;
 }
 
-function StatusBadge({ status, count, jeonseCount, wolseCount }: {
-  status: string; count?: number; jeonseCount?: number; wolseCount?: number;
-}) {
+function StatusBadge({ status, count, jeonseCount, wolseCount, failed, total }: SidoResult) {
   if (status === "ok") {
     const detail = count !== undefined
       ? `${count}건`
       : `전세 ${jeonseCount ?? 0}건 · 월세 ${wolseCount ?? 0}건`;
-    return <span className="text-green-600 dark:text-green-400">✓ {detail}</span>;
+    return (
+      <span className="text-green-600 dark:text-green-400">
+        ✓ {detail}
+        {failed ? (
+          <span className="text-amber-600 dark:text-amber-500 ml-1.5" title={`${total}개 중 ${failed}개 시군구 조회 실패 — 순위가 일부 누락됐을 수 있습니다`}>
+            (시군구 {failed}개 누락)
+          </span>
+        ) : null}
+      </span>
+    );
+  }
+  if (status === "partial_failure") {
+    return (
+      <span className="text-amber-600 dark:text-amber-500" title="조회 실패가 많아 순위를 신뢰할 수 없어 발행하지 않았습니다">
+        발행 안 함 ({total}개 중 {failed}개 실패)
+      </span>
+    );
   }
   if (status === "no_deals" || status === "no_lawdcds") {
     return <span className="text-muted-foreground">데이터 없음</span>;
@@ -62,6 +81,7 @@ function CronCard({ title, type }: { title: string; type: "apt-price" | "apt-ren
 
   const okCount = state.data?.results.filter((r) => r.status === "ok").length ?? 0;
   const errCount = state.data?.results.filter((r) => r.status.startsWith("error")).length ?? 0;
+  const skipCount = state.data?.results.filter((r) => r.status === "partial_failure").length ?? 0;
 
   return (
     <div className="border rounded-lg p-6 space-y-4">
@@ -90,8 +110,14 @@ function CronCard({ title, type }: { title: string; type: "apt-price" | "apt-ren
         <div className="space-y-2">
           <p className="text-sm font-medium">
             완료 — 성공 {okCount}개
+            {skipCount > 0 && <span className="text-amber-600 dark:text-amber-500 ml-2">발행 안 함 {skipCount}개</span>}
             {errCount > 0 && <span className="text-red-500 ml-2">오류 {errCount}개</span>}
           </p>
+          {state.data.revalidated && (
+            <p className="text-xs text-muted-foreground">
+              프로덕션 캐시 무효화: {state.data.revalidated}
+            </p>
+          )}
           <div className="border rounded-md divide-y max-h-72 overflow-y-auto text-sm">
             {state.data.results.map((r) => (
               <div key={r.sido} className="flex items-center justify-between px-3 py-2 gap-4">

@@ -8,6 +8,9 @@ import { generateMarketSummary } from "@/lib/ai-summary";
 
 export const maxDuration = 300;
 
+// 시군구 조회 실패 비율이 이 값을 넘으면 순위를 신뢰할 수 없어 발행하지 않는다.
+const FAILURE_THRESHOLD = 0.2;
+
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -37,7 +40,7 @@ export async function GET(request: Request) {
   });
 
   const targetList = sidoFilter ? SIDO_LIST.filter((s) => s === sidoFilter) : SIDO_LIST;
-  const results: { sido: string; status: string; count?: number; top10?: AptDeal[]; lawdCds?: string[]; rawCount?: number }[] = [];
+  const results: { sido: string; status: string; count?: number; failed?: number; total?: number; top10?: AptDeal[]; lawdCds?: string[]; rawCount?: number }[] = [];
 
   for (const sido of targetList) {
     try {
@@ -49,12 +52,25 @@ export async function GET(request: Request) {
 
       // 시군구별 병렬 조회 (5개씩 배치 처리)
       const allDeals: AptDeal[] = [];
+      const failedCds: string[] = [];
       for (let i = 0; i < lawdCds.length; i += 5) {
         const batch = lawdCds.slice(i, i + 5);
         const batchResults = await Promise.all(
-          batch.map((cd) => fetchAptDeals(cd, dealYmd, apiKey).catch(() => [] as AptDeal[]))
+          batch.map((cd) =>
+            fetchAptDeals(cd, dealYmd, apiKey).catch(() => {
+              failedCds.push(cd);
+              return [] as AptDeal[];
+            })
+          )
         );
         allDeals.push(...batchResults.flat());
+      }
+
+      // 시군구 조회가 많이 실패하면 순위가 틀어진다. 기존 글을 덮어쓰지 않고 중단.
+      if (failedCds.length / lawdCds.length > FAILURE_THRESHOLD) {
+        console.error(`[cron/apt-price] ${sido}: ${failedCds.length}/${lawdCds.length} 시군구 조회 실패 — 발행 건너뜀`);
+        results.push({ sido, status: "partial_failure", failed: failedCds.length, total: lawdCds.length });
+        continue;
       }
 
       // 같은 아파트는 최고가 1건만 유지
@@ -138,8 +154,8 @@ export async function GET(request: Request) {
       for (const tag of tags) revalidatePath(`/tags/${tag.slug}`);
       revalidatePath("/sitemap.xml");
 
-      results.push({ sido, status: "ok", count: top10.length });
-      console.log(`[cron/apt-price] ${sido} done (${top10.length}건)`);
+      results.push({ sido, status: "ok", count: top10.length, ...(failedCds.length > 0 && { failed: failedCds.length, total: lawdCds.length }) });
+      console.log(`[cron/apt-price] ${sido} done (${top10.length}건${failedCds.length > 0 ? `, ${failedCds.length}개 시군구 실패` : ""})`);
     } catch (e) {
       console.error(`[cron/apt-price] ${sido}:`, e);
       results.push({ sido, status: `error: ${String(e)}` });
