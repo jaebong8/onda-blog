@@ -1,13 +1,3 @@
 {
-  "regions": ["sin1"],
-  "crons": [
-    {
-      "path": "/api/cron/apt-price",
-      "schedule": "0 4 1 * *"
-    },
-    {
-      "path": "/api/cron/apt-rent",
-      "schedule": "0 5 1 * *"
-    }
-  ]
+  "regions": ["sin1"]
 }
