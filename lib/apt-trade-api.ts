@@ -1,6 +1,6 @@
 import { XMLParser } from "fast-xml-parser";
 
-const REGION_API = "http://apis.data.go.kr/1741000/StanReginCd/getStanReginCdList";
+const REGION_API = "https://apis.data.go.kr/1741000/StanReginCd/getStanReginCdList";
 const APT_API = "https://apis.data.go.kr/1613000/RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade";
 const APT_RENT_API = "https://apis.data.go.kr/1613000/RTMSDataSvcAptRent/getRTMSDataSvcAptRent";
 
