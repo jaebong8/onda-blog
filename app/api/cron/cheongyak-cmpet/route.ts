@@ -28,7 +28,7 @@ export async function GET(request: Request) {
   const dryRun = searchParams.get("dry") === "true";
   const raw = searchParams.get("raw") === "true";
 
-  // 지난 주 월~일 (KST 기준)
+  // 2주 전 월~일 (KST 기준) — 당첨자 발표까지 7~14일 걸려 1주 전은 집계중이 많음
   const kstNow = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
   const dow = kstNow.getDay();
   const thisMonday = new Date(kstNow);
@@ -36,17 +36,17 @@ export async function GET(request: Request) {
   thisMonday.setHours(0, 0, 0, 0);
 
   const lastMonday = new Date(thisMonday);
-  lastMonday.setDate(thisMonday.getDate() - 7);
+  lastMonday.setDate(thisMonday.getDate() - 14);
   const lastSunday = new Date(thisMonday);
-  lastSunday.setDate(thisMonday.getDate() - 1);
+  lastSunday.setDate(thisMonday.getDate() - 8);
 
   const lastWeekStart = lastMonday.toISOString().slice(0, 10);
   const lastWeekEnd = lastSunday.toISOString().slice(0, 10);
 
-  const year = thisMonday.getFullYear();
-  const month = String(thisMonday.getMonth() + 1).padStart(2, "0");
-  const weekOfMonth = Math.ceil(thisMonday.getDate() / 7);
-  const mondayStr = thisMonday.toISOString().slice(0, 10).replace(/-/g, "");
+  const year = lastMonday.getFullYear();
+  const month = String(lastMonday.getMonth() + 1).padStart(2, "0");
+  const weekOfMonth = Math.ceil(lastMonday.getDate() / 7);
+  const mondayStr = lastMonday.toISOString().slice(0, 10).replace(/-/g, "");
 
   // 지난주에 마감된 청약 목록
   const allListings = await fetchAPTListings(apiKey, lastWeekStart);
