@@ -166,6 +166,31 @@ export async function GET(request: Request) {
   return NextResponse.json({ ok: true, dealYmd, dryRun, results });
 }
 
+// 검색어는 "평택 아파트 순위"처럼 짧은 지명을 쓴다. "평택시"의 접미사를 뗀다.
+function shortSido(sido: string): string {
+  return sido.replace(/(특별자치시|특별시|광역시|시)$/, "");
+}
+
+// 제목·설명용 간략 금액. "100,500만원 (10억 500만원)" 같은 장황한 형태를 쓰지 않는다.
+function amountLabel(manwon: number): string {
+  const eok = Math.floor(manwon / 10000);
+  const rem = manwon % 10000;
+  if (eok > 0 && rem > 0) return `${eok}억 ${rem.toLocaleString()}만원`;
+  if (eok > 0) return `${eok}억원`;
+  return `${manwon.toLocaleString()}만원`;
+}
+
+// 제목에 넣는 금액은 억 단위로 내림한다. 올림하면 실제보다 비싸 보여 신뢰를 잃는다.
+function eokLabel(manwon: number): string {
+  const eok = Math.floor(manwon / 10000);
+  return eok > 0 ? `${eok}억` : `${manwon.toLocaleString()}만원`;
+}
+
+function pyeongOf(arStr: string): string {
+  const ar = parseFloat(arStr);
+  return isNaN(ar) ? "" : `${(ar / 3.3058).toFixed(1)}평`;
+}
+
 function formatAmount(manwon: number): string {
   const eok = Math.floor(manwon / 10000);
   const rem = manwon % 10000;
@@ -205,8 +230,14 @@ function buildPost(sido: string, dealYmd: string, top10: AptDeal[], aiSummary = 
 
   const title = `${year}년 ${month}월 ${sido} 아파트 실거래가 TOP 10`;
   const excerpt = `${year}년 ${month}월 ${sido} 아파트 매매 실거래 최고가 TOP 10입니다. 국토교통부 공공데이터 기준으로 집계했습니다.`;
-  const metaTitle = `${sido} 아파트 실거래가 TOP10 (${year}.${month}) | 매매 최고가 순위`;
-  const metaDescription = `${year}년 ${month}월 ${sido} 아파트 매매 실거래가 순위 TOP10. 국토교통부 실거래가 공개시스템 데이터 기준 최고가 아파트와 평당가, 건축년도를 정리했습니다.`;
+  // 검색결과용 제목·설명. 실제 유입 검색어가 "평택 아파트 순위" 형태라 그 어순을 앞에 두고,
+  // 1위 실거래가를 넣어 클릭 유인을 만든다. 40자를 넘기면 구글이 뒤를 잘라낸다.
+  const short = shortSido(sido);
+  const top = top10[0];
+  const metaTitle = `${short} 아파트 순위 TOP10 | 1위 ${eokLabel(top.dealAmount)} (${year}.${month})`;
+  const metaDescription =
+    `1위 ${top.aptNm} ${amountLabel(top.dealAmount)}(${pyeongOf(top.excluUseAr)}). ` +
+    `${year}년 ${Number(month)}월 ${short} 아파트 매매 실거래 TOP10의 거래금액과 평당가를 정리했습니다.`;
   const tagNames = [sido, "아파트 실거래가", "부동산", `${year}년 ${month}월 아파트값`];
 
   const rows = top10

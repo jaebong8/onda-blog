@@ -177,6 +177,30 @@ function dedupeTop(deals: AptRentDeal[], rankBy: (d: AptRentDeal) => number): Ap
     .slice(0, 10);
 }
 
+// 검색어는 "인천 아파트 전세"처럼 짧은 지명을 쓴다. "인천광역시"의 접미사를 뗀다.
+function shortSido(sido: string): string {
+  return sido.replace(/(특별자치시|특별시|광역시|시)$/, "");
+}
+
+function amountLabel(manwon: number): string {
+  const eok = Math.floor(manwon / 10000);
+  const rem = manwon % 10000;
+  if (eok > 0 && rem > 0) return `${eok}억 ${rem.toLocaleString()}만원`;
+  if (eok > 0) return `${eok}억원`;
+  return `${manwon.toLocaleString()}만원`;
+}
+
+// 제목 금액은 억 단위 내림. 올림하면 실제보다 비싸 보여 신뢰를 잃는다.
+function eokLabel(manwon: number): string {
+  const eok = Math.floor(manwon / 10000);
+  return eok > 0 ? `${eok}억` : `${manwon.toLocaleString()}만원`;
+}
+
+function pyeongOf(arStr: string): string {
+  const ar = parseFloat(arStr);
+  return isNaN(ar) ? "" : `${(ar / 3.3058).toFixed(1)}평`;
+}
+
 function formatAmount(manwon: number): string {
   const eok = Math.floor(manwon / 10000);
   const rem = manwon % 10000;
@@ -247,8 +271,21 @@ function buildPost(sido: string, dealYmd: string, jeonseTop10: AptRentDeal[], wo
 
   const title = `${year}년 ${month}월 ${sido} 아파트 전월세 실거래가 TOP 10`;
   const excerpt = `${year}년 ${month}월 ${sido} 아파트 전세 보증금, 월세 실거래 TOP 10입니다. 국토교통부 공공데이터 기준으로 집계했습니다.`;
-  const metaTitle = `${sido} 아파트 전월세 실거래가 TOP10 (${year}.${month}) | 전세·월세 순위`;
-  const metaDescription = `${year}년 ${month}월 ${sido} 아파트 전월세 실거래가 순위 TOP10. 국토교통부 실거래가 공개시스템 데이터 기준 전세 보증금 최고가와 월세 최고가를 정리했습니다.`;
+  // 검색결과용 제목·설명. 전세 검색량이 월세보다 많아 전세 1위를 후킹으로 쓰되,
+  // 전세 거래가 없는 달은 월세 1위로 대체한다.
+  const short = shortSido(sido);
+  const top = jeonseTop10[0] ?? wolseTop10[0];
+  const isJeonse = jeonseTop10.length > 0;
+  const kind = isJeonse ? "전세" : "월세";
+  const hookAmount = isJeonse ? top?.deposit : top?.monthlyRent;
+
+  const metaTitle = top
+    ? `${short} 아파트 ${kind} 순위 TOP10 | 1위 ${eokLabel(hookAmount ?? 0)} (${year}.${month})`
+    : `${short} 아파트 전월세 순위 TOP10 (${year}.${month})`;
+  const metaDescription = top
+    ? `${kind} 1위 ${top.aptNm} ${amountLabel(hookAmount ?? 0)}(${pyeongOf(top.excluUseAr)}). ` +
+      `${year}년 ${Number(month)}월 ${short} 아파트 전세·월세 실거래 TOP10을 정리했습니다.`
+    : `${year}년 ${Number(month)}월 ${short} 아파트 전월세 실거래가 순위 TOP10. 전세 보증금과 월세 최고가를 정리했습니다.`;
   const tagNames = [sido, "아파트 전월세", "전세", "월세", `${year}년 ${month}월 전월세`];
 
   const jeonseSection = jeonseTop10.length > 0
