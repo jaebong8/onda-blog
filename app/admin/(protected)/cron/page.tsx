@@ -144,8 +144,8 @@ export default function AdminCronPage() {
       <div>
         <h1 className="text-2xl font-bold">자동발행</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          매월 1일 실행. 전월 국토교통부 실거래 데이터를 수집해 포스트를 자동 발행합니다.
-          로컬 dev 서버에서 실행해야 정상 동작합니다.
+          매월 25일 GitHub Actions로 자동 실행됩니다. 전월 국토교통부 실거래 데이터를
+          수집해 포스트를 발행합니다. 여기서는 일부 시도만 골라 재실행할 때 쓰세요.
         </p>
       </div>
 
