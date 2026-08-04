@@ -57,6 +57,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/calculators/mortgage`, changeFrequency: "yearly", priority: 0.8 },
     { url: `${siteUrl}/calculators/yangdo`, changeFrequency: "yearly", priority: 0.8 },
     { url: `${siteUrl}/calculators/jeungye`, changeFrequency: "yearly", priority: 0.8 },
+    { url: `${siteUrl}/calculators/unemployment`, changeFrequency: "yearly", priority: 0.8 },
   ];
 
   const aptHubEntries: MetadataRoute.Sitemap = [

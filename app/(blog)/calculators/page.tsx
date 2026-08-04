@@ -7,12 +7,12 @@ export const revalidate = 3600;
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 export const metadata: Metadata = {
-  title: "부동산 계산기 모음 — 청약가점·중개수수료·취득세·주담대·양도소득세·증여세",
-  description: "청약 가점·중개수수료·취득세·주담대 이자·양도소득세·증여세 계산기를 한 곳에서 무료로 이용하세요.",
+  title: "무료 계산기 모음 — 실업급여·청약가점·취득세·양도소득세·증여세·주담대",
+  description: "실업급여·청약 가점·중개수수료·취득세·주담대 이자·양도소득세·증여세 계산기를 한 곳에서 무료로 이용하세요.",
   alternates: { canonical: `${siteUrl}/calculators` },
   openGraph: {
-    title: "부동산 계산기 모음",
-    description: "청약가점·중개수수료·취득세·주담대·양도소득세 무료 계산기",
+    title: "무료 계산기 모음",
+    description: "실업급여·청약가점·중개수수료·취득세·주담대·양도소득세 무료 계산기",
     url: `${siteUrl}/calculators`,
   },
 };
@@ -72,12 +72,21 @@ const CALCULATORS = [
     iconBg: "bg-teal-50 dark:bg-teal-950",
     accent: "text-teal-600 dark:text-teal-400",
   },
+  {
+    href: "/calculators/unemployment",
+    title: "실업급여 계산기",
+    desc: "퇴직 전 월급과 고용보험 가입기간을 입력하면 1일 지급액과 총 수령액을 계산합니다. 상·하한액과 소정급여일수를 자동 반영합니다.",
+    badge: "2026년 기준",
+    icon: "💼",
+    iconBg: "bg-sky-50 dark:bg-sky-950",
+    accent: "text-sky-600 dark:text-sky-400",
+  },
 ];
 
 const ITEM_LIST_LD = {
   "@context": "https://schema.org",
   "@type": "ItemList",
-  name: "부동산 계산기 모음",
+  name: "무료 계산기 모음",
   url: `${siteUrl}/calculators`,
   itemListElement: CALCULATORS.map((calc, i) => ({
     "@type": "ListItem",
@@ -92,8 +101,8 @@ export default function CalculatorsPage() {
     <div className="space-y-8">
       <Script id="itemlist-ld-calculators" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ITEM_LIST_LD) }} />
       <header className="space-y-2">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">부동산 계산기</h1>
-        <p className="text-muted-foreground">청약·중개수수료·취득세·주담대 계산을 한 곳에서 무료로 이용하세요.</p>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">무료 계산기</h1>
+        <p className="text-muted-foreground">실업급여·청약·취득세·주담대 계산을 한 곳에서 무료로 이용하세요.</p>
       </header>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
