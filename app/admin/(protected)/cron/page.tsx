@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { SIDO_LIST } from "@/lib/apt-regions";
 
 type SidoResult = {
   sido: string;
@@ -13,14 +14,23 @@ type SidoResult = {
   total?: number;
 };
 
-type CronResult = {
-  ok: boolean;
-  dealYmd: string;
-  revalidated?: string;
+type State = {
+  running: boolean;
+  done: number;
+  current: string | null;
   results: SidoResult[];
+  revalidated: string | null;
+  error: string | null;
 };
 
-type State = { loading: boolean; data: CronResult | null; error: string | null };
+const IDLE: State = {
+  running: false,
+  done: 0,
+  current: null,
+  results: [],
+  revalidated: null,
+  error: null,
+};
 
 function prevMonthLabel() {
   const d = new Date();
@@ -30,14 +40,16 @@ function prevMonthLabel() {
 
 function StatusBadge({ status, count, jeonseCount, wolseCount, failed, total }: SidoResult) {
   if (status === "ok") {
-    const detail = count !== undefined
-      ? `${count}건`
-      : `전세 ${jeonseCount ?? 0}건 · 월세 ${wolseCount ?? 0}건`;
+    const detail =
+      count !== undefined ? `${count}건` : `전세 ${jeonseCount ?? 0}건 · 월세 ${wolseCount ?? 0}건`;
     return (
       <span className="text-green-600 dark:text-green-400">
         ✓ {detail}
         {failed ? (
-          <span className="text-amber-600 dark:text-amber-500 ml-1.5" title={`${total}개 중 ${failed}개 시군구 조회 실패 — 순위가 일부 누락됐을 수 있습니다`}>
+          <span
+            className="text-amber-600 dark:text-amber-500 ml-1.5"
+            title={`${total}개 중 ${failed}개 시군구 조회 실패 — 순위가 일부 누락됐을 수 있습니다`}
+          >
             (시군구 {failed}개 누락)
           </span>
         ) : null}
@@ -46,7 +58,10 @@ function StatusBadge({ status, count, jeonseCount, wolseCount, failed, total }: 
   }
   if (status === "partial_failure") {
     return (
-      <span className="text-amber-600 dark:text-amber-500" title="조회 실패가 많아 순위를 신뢰할 수 없어 발행하지 않았습니다">
+      <span
+        className="text-amber-600 dark:text-amber-500"
+        title="조회 실패가 많아 순위를 신뢰할 수 없어 발행하지 않았습니다"
+      >
         발행 안 함 ({total}개 중 {failed}개 실패)
       </span>
     );
@@ -54,34 +69,65 @@ function StatusBadge({ status, count, jeonseCount, wolseCount, failed, total }: 
   if (status === "no_deals" || status === "no_lawdcds") {
     return <span className="text-muted-foreground">데이터 없음</span>;
   }
-  if (status.startsWith("error")) {
-    return <span className="text-red-500 truncate max-w-[200px]" title={status}>오류</span>;
+  if (status.startsWith("error") || status === "요청 실패") {
+    return (
+      <span className="text-red-500 truncate max-w-[220px]" title={status}>
+        오류
+      </span>
+    );
   }
   return <span className="text-muted-foreground">{status}</span>;
 }
 
 function CronCard({ title, type }: { title: string; type: "apt-price" | "apt-rent" }) {
-  const [state, setState] = useState<State>({ loading: false, data: null, error: null });
+  const [state, setState] = useState<State>(IDLE);
 
   async function handleRun() {
-    setState({ loading: true, data: null, error: null });
+    setState({ ...IDLE, running: true });
+
+    const results: SidoResult[] = [];
+
+    for (const sido of SIDO_LIST) {
+      setState((s) => ({ ...s, current: sido }));
+      try {
+        const res = await fetch("/api/admin/cron", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type, sido }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+        // 시도를 지정해 호출했으므로 results에는 항상 한 건만 온다
+        results.push(data.results?.[0] ?? { sido, status: "empty" });
+      } catch (e) {
+        results.push({ sido, status: `error: ${String(e)}` });
+      }
+      setState((s) => ({ ...s, done: s.done + 1, results: [...results] }));
+    }
+
+    // 프로덕션 캐시는 전 시도가 끝난 뒤 한 번만 무효화한다
+    let revalidated: string | null = null;
     try {
       const res = await fetch("/api/admin/cron", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type }),
+        body: JSON.stringify({ revalidate: true }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "실행 실패");
-      setState({ loading: false, data, error: null });
+      revalidated = data.revalidated ?? null;
     } catch (e) {
-      setState({ loading: false, data: null, error: String(e) });
+      revalidated = `실패: ${String(e)}`;
     }
+
+    setState((s) => ({ ...s, running: false, current: null, revalidated }));
   }
 
-  const okCount = state.data?.results.filter((r) => r.status === "ok").length ?? 0;
-  const errCount = state.data?.results.filter((r) => r.status.startsWith("error")).length ?? 0;
-  const skipCount = state.data?.results.filter((r) => r.status === "partial_failure").length ?? 0;
+  const { running, done, current, results, revalidated } = state;
+  const total = SIDO_LIST.length;
+  const okCount = results.filter((r) => r.status === "ok").length;
+  const errCount = results.filter((r) => r.status.startsWith("error")).length;
+  const skipCount = results.filter((r) => r.status === "partial_failure").length;
+  const finished = !running && results.length > 0;
 
   return (
     <div className="border rounded-lg p-6 space-y-4">
@@ -90,42 +136,54 @@ function CronCard({ title, type }: { title: string; type: "apt-price" | "apt-ren
           <h2 className="font-semibold">{title}</h2>
           <p className="text-xs text-muted-foreground mt-0.5">대상: {prevMonthLabel()}</p>
         </div>
-        <Button onClick={handleRun} disabled={state.loading} className="shrink-0">
-          {state.loading ? (
+        <Button onClick={handleRun} disabled={running} className="shrink-0">
+          {running ? (
             <span className="flex items-center gap-2">
               <span className="size-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              실행 중…
+              {done} / {total}
             </span>
-          ) : "실행"}
+          ) : (
+            "실행"
+          )}
         </Button>
       </div>
 
-      {state.loading && (
-        <p className="text-sm text-muted-foreground">
-          35개 시도 순차 처리 중입니다. 수 분 소요됩니다…
+      {running && (
+        <div className="space-y-2">
+          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full bg-primary transition-all duration-300"
+              style={{ width: `${(done / total) * 100}%` }}
+            />
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {current ? `${current} 처리 중…` : "마무리 중…"}
+          </p>
+        </div>
+      )}
+
+      {finished && (
+        <p className="text-sm font-medium">
+          완료 — 성공 {okCount}개
+          {skipCount > 0 && (
+            <span className="text-amber-600 dark:text-amber-500 ml-2">발행 안 함 {skipCount}개</span>
+          )}
+          {errCount > 0 && <span className="text-red-500 ml-2">오류 {errCount}개</span>}
         </p>
       )}
 
-      {state.data && (
-        <div className="space-y-2">
-          <p className="text-sm font-medium">
-            완료 — 성공 {okCount}개
-            {skipCount > 0 && <span className="text-amber-600 dark:text-amber-500 ml-2">발행 안 함 {skipCount}개</span>}
-            {errCount > 0 && <span className="text-red-500 ml-2">오류 {errCount}개</span>}
-          </p>
-          {state.data.revalidated && (
-            <p className="text-xs text-muted-foreground">
-              프로덕션 캐시 무효화: {state.data.revalidated}
-            </p>
-          )}
-          <div className="border rounded-md divide-y max-h-72 overflow-y-auto text-sm">
-            {state.data.results.map((r) => (
-              <div key={r.sido} className="flex items-center justify-between px-3 py-2 gap-4">
-                <span className="text-muted-foreground">{r.sido}</span>
-                <StatusBadge {...r} />
-              </div>
-            ))}
-          </div>
+      {finished && revalidated && (
+        <p className="text-xs text-muted-foreground">프로덕션 캐시 무효화: {revalidated}</p>
+      )}
+
+      {results.length > 0 && (
+        <div className="border rounded-md divide-y max-h-72 overflow-y-auto text-sm">
+          {results.map((r) => (
+            <div key={r.sido} className="flex items-center justify-between px-3 py-2 gap-4">
+              <span className="text-muted-foreground">{r.sido}</span>
+              <StatusBadge {...r} />
+            </div>
+          ))}
         </div>
       )}
 
